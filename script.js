@@ -39,6 +39,34 @@ const siteCopy = {
     submit: "Отправить запрос",
     submitted: "Запрос готов",
     footer: "Цифровые продукты с инженерной глубиной",
+    heroEyebrow: "Индивидуальная разработка, AI, веб-платформы",
+    introKicker: "Инженерия со вкусом",
+    servicesKicker: "Что мы создаём",
+    casesKicker: "Избранные результаты",
+    teamKicker: "Люди за сильным сигналом",
+    processKicker: "Как мы движемся",
+    stackKicker: "Современный стек",
+    contactKicker: "Начать проект",
+    serviceTitles: ["Веб-платформы", "AI-автоматизация", "Мобильные продукты", "Облачная инфраструктура"],
+    serviceTexts: [
+      "Личные кабинеты, SaaS, маркетплейсы, порталы и операционные панели.",
+      "Ассистенты, RAG-системы, обработка документов и умные внутренние процессы.",
+      "Быстрые приложения с аккуратным UX, push-сценариями и аналитикой.",
+      "Инфраструктура, CI/CD, мониторинг, безопасность и масштабирование.",
+    ],
+    caseTypes: ["Fintech-платформа", "AI-операции", "Корпоративный дашборд"],
+    caseTitles: [
+      "Система заявок, скоринга и отчётности для финансовой команды",
+      "AI-ассистент для обработки запросов, документов и клиентских сценариев",
+      "Командный центр с метриками продаж, склада и операционной нагрузки",
+    ],
+    processTitles: ["Исследование", "Дизайн системы", "Разработка", "Рост"],
+    processTexts: [
+      "Находим бизнес-цель, ограничения, данные, риски и быстрый путь к ценности.",
+      "Собираем UX, визуальный язык, архитектуру и план релизов.",
+      "Разрабатываем продукт, интеграции, админ-панели, аналитику и тестируем критичные сценарии.",
+      "Улучшаем метрики, автоматизируем операции и готовим систему к нагрузке.",
+    ],
   },
   en: {
     nav: ["Services", "SeatMap", "Work", "Team", "Process", "Contact"],
@@ -71,6 +99,34 @@ const siteCopy = {
     submit: "Send request",
     submitted: "Request ready",
     footer: "Digital products with engineering depth",
+    heroEyebrow: "Custom software, AI, web platforms",
+    introKicker: "Engineering with taste",
+    servicesKicker: "What we build",
+    casesKicker: "Selected outcomes",
+    teamKicker: "The people behind the signal",
+    processKicker: "How we move",
+    stackKicker: "Modern stack",
+    contactKicker: "Start the signal",
+    serviceTitles: ["Web platforms", "AI automation", "Mobile products", "Cloud engineering"],
+    serviceTexts: [
+      "Client portals, SaaS, marketplaces, operational dashboards, and internal platforms.",
+      "Assistants, RAG systems, document processing, and intelligent internal workflows.",
+      "Fast applications with polished UX, push scenarios, and analytics.",
+      "Infrastructure, CI/CD, monitoring, security, and scaling.",
+    ],
+    caseTypes: ["Fintech platform", "AI operations", "Enterprise dashboard"],
+    caseTitles: [
+      "Application, scoring, and reporting system for a finance team",
+      "AI assistant for requests, documents, and client scenarios",
+      "Command center for sales, warehouse, and operations metrics",
+    ],
+    processTitles: ["Discovery", "System design", "Development", "Growth"],
+    processTexts: [
+      "We find the business goal, constraints, data, risks, and the fastest route to value.",
+      "We shape UX, visual language, architecture, and the release plan.",
+      "We build the product, integrations, admin panels, analytics, and test critical flows.",
+      "We improve metrics, automate operations, and prepare the system for load.",
+    ],
   },
   bg: {
     nav: ["Услуги", "SeatMap", "Кейсове", "Екип", "Процес", "Контакт"],
@@ -103,6 +159,34 @@ const siteCopy = {
     submit: "Изпрати заявка",
     submitted: "Заявката е готова",
     footer: "Дигитални продукти с инженерна дълбочина",
+    heroEyebrow: "Custom software, AI, web platforms",
+    introKicker: "Инженерство с вкус",
+    servicesKicker: "Какво изграждаме",
+    casesKicker: "Избрани резултати",
+    teamKicker: "Хората зад сигнала",
+    processKicker: "Как работим",
+    stackKicker: "Модерен stack",
+    contactKicker: "Стартирай проекта",
+    serviceTitles: ["Уеб платформи", "AI автоматизация", "Мобилни продукти", "Cloud engineering"],
+    serviceTexts: [
+      "Клиентски портали, SaaS, маркетплейси, операционни панели и вътрешни системи.",
+      "Асистенти, RAG системи, обработка на документи и умни вътрешни процеси.",
+      "Бързи приложения с прецизен UX, push сценарии и аналитика.",
+      "Инфраструктура, CI/CD, мониторинг, сигурност и мащабиране.",
+    ],
+    caseTypes: ["Fintech платформа", "AI операции", "Enterprise dashboard"],
+    caseTitles: [
+      "Система за заявки, scoring и отчети за финансов екип",
+      "AI асистент за заявки, документи и клиентски сценарии",
+      "Команден център с метрики за продажби, склад и операции",
+    ],
+    processTitles: ["Проучване", "Дизайн на системата", "Разработка", "Растеж"],
+    processTexts: [
+      "Откриваме бизнес целта, ограниченията, данните, рисковете и най-бързия път към стойност.",
+      "Създаваме UX, визуален език, архитектура и план за релийзи.",
+      "Разработваме продукта, интеграциите, админ панелите, аналитиката и критичните сценарии.",
+      "Подобряваме метриките, автоматизираме операциите и подготвяме системата за натоварване.",
+    ],
   },
 };
 
@@ -280,6 +364,7 @@ function applySiteLanguage(language) {
 
   setAllText(".main-nav a", copy.nav);
   setAllText(".mobile-menu a", copy.nav);
+  setText(".hero .eyebrow", copy.heroEyebrow);
   setText(".nav-cta", copy.cta);
   setText(".hero-lead", copy.heroLead);
   setText(".hero-actions .primary", copy.heroPrimary);
@@ -290,16 +375,29 @@ function applySiteLanguage(language) {
   setText(".seatmap-actions .gold", copy.beta);
   setText(".seatmap-actions .ghost-dark", copy.product);
   setText(".intro h2", copy.introTitle);
+  setText(".intro .section-kicker", copy.introKicker);
   setText(".intro p", copy.introText);
+  setText(".services .section-kicker", copy.servicesKicker);
   setText("#services-title", copy.servicesTitle);
   setText(".services .section-heading > p", copy.servicesText);
+  setAllText(".service-card h3", copy.serviceTitles || []);
+  setAllText(".service-card p", copy.serviceTexts || []);
+  setText(".showcase .section-kicker", copy.casesKicker);
   setText("#work-title", copy.casesTitle);
   setText(".showcase .text-link", copy.nextCase);
+  setAllText(".case-card .case-type", copy.caseTypes || []);
+  setAllText(".case-card h3", copy.caseTitles || []);
+  setText(".team .section-kicker", copy.teamKicker);
   setText("#team-title", copy.teamTitle);
   setText(".team .section-heading > p", copy.teamText);
+  setText(".process .section-kicker", copy.processKicker);
   setText("#process-title", copy.processTitle);
   setText(".process .section-heading > p", copy.processText);
+  setAllText(".process-step h3", copy.processTitles || []);
+  setAllText(".process-step p", copy.processTexts || []);
+  setText(".stack-copy .section-kicker", copy.stackKicker);
   setText(".stack-copy p:not(.section-kicker)", copy.stackText);
+  setText(".contact-copy .section-kicker", copy.contactKicker);
   setText("#contact-title", copy.contactTitle);
   setText(".contact-copy p:not(.section-kicker)", copy.contactText);
   setText(".contact-form label:nth-child(1) span", copy.formName);

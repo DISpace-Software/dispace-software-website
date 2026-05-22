@@ -7,6 +7,9 @@
         var base = document.createElement("base");
         base.href = new URL("./", window.location.href).href;
         document.head.prepend(base);
+        if (!window.localStorage.getItem("restaurant-lang")) {
+          window.localStorage.setItem("restaurant-lang", "ru");
+        }
       })();
     </script>
     <link rel="icon" type="image/png" href="./seatmap-header-premium.png" />
