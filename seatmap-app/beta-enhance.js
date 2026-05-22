@@ -639,6 +639,10 @@
     });
   }
 
+  function isElement(value) {
+    return value instanceof Element;
+  }
+
   function findFormControl(patterns) {
     const normalizedPatterns = patterns.map((pattern) => pattern.toLowerCase());
     const controls = Array.from(document.querySelectorAll("input, select, textarea")).filter(
@@ -675,6 +679,48 @@
     }
 
     return target;
+  }
+
+  function findReservationMapRegion() {
+    const root = document.querySelector("#root") || document.body;
+    const candidates = Array.from(root.querySelectorAll("section, main > div, div")).filter((element) => {
+      if (element.closest(".seatmap-command-bar, .seatmap-tutorial")) return false;
+      const text = normalizeText(element.textContent || "").toLowerCase();
+      const rect = element.getBoundingClientRect();
+      if (rect.width < 240 || rect.height < 260) return false;
+      const hasTableWords = ["seats", "мест", "table", "стол", "hall", "зал", "available", "доступ"].some((word) =>
+        text.includes(word)
+      );
+      const tableNumberCount = (text.match(/\b([1-9]|1\d|2\d|29)\b/g) || []).length;
+      return hasTableWords && tableNumberCount >= 4;
+    });
+
+    return candidates.sort((a, b) => {
+      const areaA = a.getBoundingClientRect().width * a.getBoundingClientRect().height;
+      const areaB = b.getBoundingClientRect().width * b.getBoundingClientRect().height;
+      return areaA - areaB;
+    })[0] || findTextElement(["hall / non-smoking", "зал / некурящие"])?.closest("section, main > div, div");
+  }
+
+  function findSuggestedTableTarget() {
+    const map = findReservationMapRegion();
+    if (!map) return null;
+
+    const candidates = Array.from(map.querySelectorAll("button, [role='button'], [tabindex], div, span")).filter((element) => {
+      if (element.closest(".seatmap-command-bar, .seatmap-tutorial")) return false;
+      const text = normalizeText(element.textContent || "");
+      const rect = element.getBoundingClientRect();
+      if (rect.width < 28 || rect.height < 24 || rect.width > 220 || rect.height > 160) return false;
+      return /\b(5|6|8|20|21|24|25|26|27|28|29)\b/.test(text) || /seats|мест|people|гостей/i.test(text);
+    });
+
+    return candidates.sort((a, b) => {
+      const aRect = a.getBoundingClientRect();
+      const bRect = b.getBoundingClientRect();
+      const aCenter = Math.abs(aRect.left + aRect.width / 2 - window.innerWidth / 2) + Math.abs(aRect.top + aRect.height / 2 - window.innerHeight / 2);
+      const bCenter = Math.abs(bRect.left + bRect.width / 2 - window.innerWidth / 2) + Math.abs(bRect.top + bRect.height / 2 - window.innerHeight / 2);
+      return aCenter - bCenter;
+    })[0] || map;
   }
 
   function getTutorialSteps() {
@@ -749,15 +795,17 @@
       {
         route: "reservation",
         find: () =>
+          findSuggestedTableTarget() ||
           findActionableText(["available tables", "доступные столы", "best available options", "лучшие свободные", "capacity", "вместимость"]) ||
-          findTextElement(["table", "стол"]) ||
+          findReservationMapRegion() ||
           document.querySelector("main"),
-        title: "Посмотрите варианты и комбинации",
-        text: "После выбора параметров SeatMap показывает все подходящие столы. Для большой компании система предлагает комбинации, если один стол мал.",
+        title: "Теперь выберите стол на карте",
+        text: "Все данные визита заполнены. Карта открыта для выбора: стрелка показывает подходящий стол или лучший вариант комбинации для компании.",
         side: "right",
         action: "main-click",
-        waiting: "Кликните по подходящему столу или варианту",
-        spotlightPadding: 18,
+        waiting: "Кликните по подсвеченному столику или варианту",
+        spotlightPadding: 24,
+        mode: "map",
       },
       {
         route: "reservation",
@@ -818,6 +866,7 @@
     tutorial.innerHTML = `
       <div class="seatmap-tutorial-scrim"></div>
       <div class="seatmap-tutorial-spotlight"></div>
+      <div class="seatmap-tutorial-pointer">Выберите здесь</div>
       <div class="seatmap-tutorial-card" role="dialog" aria-live="polite" aria-label="Обучение SeatMap">
         <p class="seatmap-tutorial-kicker">Обучение</p>
         <h2></h2>
@@ -840,6 +889,7 @@
     let isAdvancing = false;
     const steps = getTutorialSteps();
     const spotlight = tutorial.querySelector(".seatmap-tutorial-spotlight");
+    const pointer = tutorial.querySelector(".seatmap-tutorial-pointer");
     const card = tutorial.querySelector(".seatmap-tutorial-card");
     const title = tutorial.querySelector("h2");
     const copy = tutorial.querySelector(".seatmap-tutorial-copy");
@@ -889,6 +939,8 @@
       spotlight.style.height = `${spotlightRect.height}px`;
       spotlight.style.left = `${spotlightRect.left}px`;
       spotlight.style.top = `${spotlightRect.top}px`;
+      pointer.style.left = `${Math.min(window.innerWidth - 156, Math.max(12, spotlightRect.left + spotlightRect.width / 2 - 70))}px`;
+      pointer.style.top = `${Math.max(12, spotlightRect.top - 44)}px`;
 
       const isMobile = window.matchMedia("(max-width: 700px)").matches;
       const cardWidth = Math.min(isMobile ? 340 : 360, window.innerWidth - 28);
@@ -935,6 +987,7 @@
       }
 
       tutorial.classList.remove("is-action-done");
+      tutorial.classList.toggle("is-map-step", step.mode === "map");
       tutorial.classList.add("is-waiting");
       step.before?.();
 
@@ -942,7 +995,8 @@
         if (token !== renderToken || !tutorial.classList.contains("is-open")) return;
         let target = targetForStep(step);
         if (!target) target = document.querySelector("main") || document.body;
-        target.scrollIntoView?.({ behavior: "smooth", block: "center", inline: "center" });
+        const scrollTarget = step.mode === "map" ? findReservationMapRegion() || target : target;
+        scrollTarget.scrollIntoView?.({ behavior: "smooth", block: step.mode === "map" ? "center" : "center", inline: "center" });
 
         window.setTimeout(() => {
           if (token !== renderToken || !tutorial.classList.contains("is-open")) return;
@@ -977,6 +1031,7 @@
     function matchesCurrentAction(event, eventName) {
       if (!tutorial.classList.contains("is-open")) return false;
       if (isAdvancing) return false;
+      if (!isElement(event.target)) return false;
       if (event.target.closest(".seatmap-tutorial")) return false;
 
       const step = steps[index];
@@ -984,7 +1039,9 @@
       const target = currentTarget();
 
       if (step.action === "main-click") {
-        return eventName === "click" && Boolean(event.target.closest("#root, main, button, [role='button']"));
+        const map = findReservationMapRegion();
+        return eventName === "click" && Boolean(event.target.closest("#root, main, button, [role='button']")) &&
+          (!map || map === event.target || map.contains(event.target));
       }
 
       if (step.action === "change") {

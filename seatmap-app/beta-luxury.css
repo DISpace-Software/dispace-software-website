@@ -499,6 +499,7 @@ body::before {
 
 .seatmap-tutorial-scrim,
 .seatmap-tutorial-spotlight,
+.seatmap-tutorial-pointer,
 .seatmap-tutorial-card {
   position: fixed;
   opacity: 0;
@@ -533,6 +534,37 @@ body::before {
   content: "";
   background: linear-gradient(90deg, rgba(255, 231, 180, 0.92), transparent);
   transform: translateY(-50%);
+}
+
+.seatmap-tutorial-pointer {
+  z-index: 224;
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgba(255, 231, 180, 0.7);
+  border-radius: 999px;
+  padding: 0 12px;
+  color: #120d07;
+  background: linear-gradient(135deg, #ffe7b4, #c9954d 58%, #8e5d25);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.35);
+  font-size: 0.72rem;
+  font-weight: 950;
+  pointer-events: none;
+  transform: translateY(-4px);
+}
+
+.seatmap-tutorial-pointer::after {
+  width: 0;
+  height: 0;
+  border-top: 8px solid #c9954d;
+  border-right: 7px solid transparent;
+  border-left: 7px solid transparent;
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  transform: translateX(-50%);
 }
 
 .seatmap-tutorial-card {
@@ -684,8 +716,13 @@ body::before {
 
 .seatmap-tutorial.is-open .seatmap-tutorial-scrim,
 .seatmap-tutorial.is-open .seatmap-tutorial-spotlight,
+.seatmap-tutorial.is-open .seatmap-tutorial-pointer,
 .seatmap-tutorial.is-open .seatmap-tutorial-card {
   opacity: 1;
+}
+
+.seatmap-tutorial:not(.is-map-step) .seatmap-tutorial-pointer {
+  opacity: 0;
 }
 
 .seatmap-tutorial.is-open .seatmap-tutorial-card {
@@ -770,9 +807,10 @@ body::before {
   }
 
   .seatmap-tutorial-card {
-    max-height: min(48vh, 360px);
+    max-height: min(34vh, 260px);
     width: auto !important;
-    padding: 14px;
+    padding: 10px;
+    border-radius: 8px;
   }
 
   .seatmap-tutorial-card::before,
@@ -781,20 +819,46 @@ body::before {
   }
 
   .seatmap-tutorial-actions {
-    grid-template-columns: 1fr;
-    gap: 7px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 5px;
+    margin-top: 9px;
   }
 
   .seatmap-tutorial-card h2 {
-    font-size: clamp(1.25rem, 7vw, 1.9rem);
+    font-size: clamp(1rem, 5.5vw, 1.38rem);
   }
 
   .seatmap-tutorial-copy {
-    font-size: 0.84rem;
-    line-height: 1.45;
+    margin-top: 7px;
+    font-size: 0.74rem;
+    line-height: 1.32;
   }
 
   .seatmap-tutorial-wait {
-    font-size: 0.72rem;
+    margin-top: 8px;
+    padding: 7px 8px;
+    font-size: 0.66rem;
+  }
+
+  .seatmap-tutorial-progress {
+    margin-top: 8px;
+    font-size: 0.62rem;
+  }
+
+  .seatmap-tutorial-kicker {
+    margin-bottom: 6px;
+    font-size: 0.58rem;
+  }
+
+  .seatmap-tutorial-actions button {
+    min-height: 34px;
+    padding: 0 6px;
+    font-size: 0.64rem;
+  }
+
+  .seatmap-tutorial-pointer {
+    min-height: 28px;
+    padding: 0 9px;
+    font-size: 0.62rem;
   }
 }
