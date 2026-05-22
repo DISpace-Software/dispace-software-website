@@ -5,6 +5,8 @@
     menu: "/menu",
     admin: "/admin",
   };
+  const initialParams = new URLSearchParams(window.location.search);
+  const forceTutorial = initialParams.get("tour") === "1";
 
   const languages = {
     bg: "Български",
@@ -393,6 +395,11 @@
     setActiveRoute(route);
   }
 
+  function routeFromQuery() {
+    const route = initialParams.get("route");
+    return routes[route] ? route : "";
+  }
+
   function getFieldKey(field) {
     if (!field || field.closest(".seatmap-command-bar")) return "";
     if (field.type === "password" || field.type === "hidden" || field.type === "file") return "";
@@ -616,6 +623,222 @@
     return "home";
   }
 
+  function findTextElement(patterns) {
+    const normalizedPatterns = patterns.map((pattern) => pattern.toLowerCase());
+    const candidates = Array.from(
+      document.querySelectorAll("button, a, h1, h2, h3, label, p, span, strong, input, select")
+    );
+
+    return candidates.find((element) => {
+      const text = normalizeText(
+        element.matches("input, select")
+          ? element.getAttribute("placeholder") || element.getAttribute("aria-label") || ""
+          : element.textContent || ""
+      ).toLowerCase();
+      return text && normalizedPatterns.some((pattern) => text.includes(pattern));
+    });
+  }
+
+  function getTutorialSteps() {
+    return [
+      {
+        route: "home",
+        selector: ".seatmap-command-bar",
+        title: "Это панель навигации",
+        text: "Нажмите на маленькую кнопку слева: здесь быстро открываются карта бронирований, меню, CRM и выбор языка.",
+        side: "right",
+      },
+      {
+        route: "reservation",
+        selector: "[data-seatmap-route='reservation']",
+        title: "Начинаем с карты бронирования",
+        text: "Гость выбирает зону, дату, время, количество людей и видит только подходящие доступные столы.",
+        side: "right",
+      },
+      {
+        route: "reservation",
+        find: () => findTextElement(["visit details", "детали визита", "reservation details", "дата"]),
+        title: "Заполните детали визита",
+        text: "Эти поля управляют логикой доступности. Если дата, время или гости меняются, SeatMap пересчитывает варианты.",
+        side: "left",
+      },
+      {
+        route: "reservation",
+        find: () => findTextElement(["hall / non-smoking", "зал / некурящие", "table", "стол"]),
+        title: "Выберите конкретный стол",
+        text: "На живой карте можно кликнуть по столу, оценить вместимость и забронировать нужное место в ресторане.",
+        side: "right",
+      },
+      {
+        route: "reservation",
+        find: () => findTextElement(["reserve", "забронировать", "создать бронь"]),
+        title: "Создайте бронь",
+        text: "После бронирования появится инструкция: дальше администратор работает с заявкой в CRM.",
+        side: "left",
+      },
+      {
+        route: "admin",
+        selector: "[data-seatmap-route='admin']",
+        title: "Переход в CRM",
+        text: "В админке обрабатываются брони: подтвердить, отметить прибытие, перенести стол, добавить заметку или no-show.",
+        side: "right",
+      },
+      {
+        route: "admin",
+        find: () => document.querySelector(".seatmap-credentials-card") || findTextElement(["креденшелы", "email", "пароль"]),
+        title: "Демо-вход уже подсказан",
+        text: "Нажмите «Заполнить», посмотрите пароль через кнопку с глазом и войдите в CRM-панель ресторана.",
+        side: "right",
+      },
+      {
+        route: "menu",
+        selector: "[data-seatmap-route='menu']",
+        title: "Меню связано с операционной системой",
+        text: "CMS меню синхронизируется с digital menu и заказами гостей после посадки за стол.",
+        side: "right",
+      },
+    ];
+  }
+
+  function ensureTutorial() {
+    if (document.querySelector(".seatmap-tutorial")) return;
+
+    const tutorial = document.createElement("div");
+    tutorial.className = "seatmap-tutorial";
+    tutorial.setAttribute("aria-hidden", "true");
+    tutorial.innerHTML = `
+      <div class="seatmap-tutorial-scrim"></div>
+      <div class="seatmap-tutorial-spotlight"></div>
+      <div class="seatmap-tutorial-card" role="dialog" aria-live="polite" aria-label="Обучение SeatMap">
+        <p class="seatmap-tutorial-kicker">Обучение</p>
+        <h2></h2>
+        <p class="seatmap-tutorial-copy"></p>
+        <div class="seatmap-tutorial-progress"></div>
+        <div class="seatmap-tutorial-actions">
+          <button class="seatmap-tutorial-ghost" type="button" data-tour-prev>Назад</button>
+          <button class="seatmap-tutorial-skip" type="button" data-tour-skip>Пропустить</button>
+          <button class="seatmap-tutorial-next" type="button" data-tour-next>Далее</button>
+        </div>
+      </div>
+      <button class="seatmap-tutorial-launch" type="button">?</button>
+    `;
+
+    document.body.appendChild(tutorial);
+
+    let index = 0;
+    const steps = getTutorialSteps();
+    const spotlight = tutorial.querySelector(".seatmap-tutorial-spotlight");
+    const card = tutorial.querySelector(".seatmap-tutorial-card");
+    const title = tutorial.querySelector("h2");
+    const copy = tutorial.querySelector(".seatmap-tutorial-copy");
+    const progress = tutorial.querySelector(".seatmap-tutorial-progress");
+    const prev = tutorial.querySelector("[data-tour-prev]");
+    const next = tutorial.querySelector("[data-tour-next]");
+    const skip = tutorial.querySelector("[data-tour-skip]");
+    const launch = tutorial.querySelector(".seatmap-tutorial-launch");
+
+    function close() {
+      tutorial.classList.remove("is-open");
+      tutorial.setAttribute("aria-hidden", "true");
+      window.localStorage.setItem("seatmap:tutorial-seen", "true");
+    }
+
+    function positionAround(target, side) {
+      const rect = target.getBoundingClientRect();
+      const padding = 10;
+      spotlight.style.width = `${Math.max(rect.width + padding * 2, 68)}px`;
+      spotlight.style.height = `${Math.max(rect.height + padding * 2, 54)}px`;
+      spotlight.style.left = `${Math.max(8, rect.left - padding)}px`;
+      spotlight.style.top = `${Math.max(8, rect.top - padding)}px`;
+
+      const cardWidth = Math.min(360, window.innerWidth - 28);
+      const preferRight = side !== "left";
+      let left = preferRight ? rect.right + 24 : rect.left - cardWidth - 24;
+      if (left < 14) left = 14;
+      if (left + cardWidth > window.innerWidth - 14) left = window.innerWidth - cardWidth - 14;
+
+      let top = rect.top + rect.height / 2 - 130;
+      if (top < 14) top = 14;
+      if (top > window.innerHeight - 310) top = Math.max(14, window.innerHeight - 310);
+
+      card.style.width = `${cardWidth}px`;
+      card.style.left = `${left}px`;
+      card.style.top = `${top}px`;
+      card.dataset.side = preferRight ? "right" : "left";
+    }
+
+    function targetForStep(step) {
+      return step.selector ? document.querySelector(step.selector) : step.find?.();
+    }
+
+    function render() {
+      const step = steps[index];
+      if (!step) {
+        close();
+        return;
+      }
+
+      if (getRouteFromPath() !== step.route) {
+        openRoute(step.route);
+      }
+
+      window.setTimeout(() => {
+        let target = targetForStep(step);
+        if (!target) target = document.querySelector("main") || document.body;
+        target.scrollIntoView?.({ behavior: "smooth", block: "center", inline: "center" });
+
+        window.setTimeout(() => {
+          target = targetForStep(step) || target;
+          title.textContent = step.title;
+          copy.textContent = step.text;
+          progress.textContent = `${index + 1} / ${steps.length}`;
+          prev.disabled = index === 0;
+          next.textContent = index === steps.length - 1 ? "Готово" : "Далее";
+          positionAround(target, step.side);
+        }, 260);
+      }, 180);
+    }
+
+    function open(startIndex = 0) {
+      index = startIndex;
+      tutorial.classList.add("is-open");
+      tutorial.setAttribute("aria-hidden", "false");
+      render();
+    }
+
+    next.addEventListener("click", () => {
+      index += 1;
+      render();
+    });
+    prev.addEventListener("click", () => {
+      index = Math.max(0, index - 1);
+      render();
+    });
+    skip.addEventListener("click", close);
+    launch.addEventListener("click", () => open(0));
+    window.addEventListener("resize", render);
+
+    if (forceTutorial || !window.localStorage.getItem("seatmap:tutorial-seen")) {
+      window.setTimeout(() => open(0), 900);
+    }
+  }
+
+  function buildFrameBlocker() {
+    if (window.self === window.top || document.querySelector(".seatmap-frame-blocker")) return;
+
+    const blocker = document.createElement("div");
+    blocker.className = "seatmap-frame-blocker";
+    blocker.innerHTML = `
+      <div>
+        <p>Полноэкранный режим</p>
+        <h1>SeatMap beta лучше работает в новой вкладке</h1>
+        <span>Интерактивная карта, CRM и обучение требуют полного окна браузера.</span>
+        <a href="${window.location.href}" target="_blank" rel="noopener">Открыть beta</a>
+      </div>
+    `;
+    document.body.appendChild(blocker);
+  }
+
   function syncLanguage(nextLanguage) {
     window.localStorage.setItem("restaurant-lang", nextLanguage);
     const nativeButton = Array.from(document.querySelectorAll("button")).find(
@@ -767,12 +990,14 @@
     });
 
     document.body.appendChild(bar);
+    buildFrameBlocker();
     setActiveRoute(getRouteFromPath());
     activateNativeRussian();
     localizeRussianText();
     setupReservationDrafts();
     setupAdminLoginHints();
     hideNativeLanguageControls();
+    ensureTutorial();
 
     const observer = new MutationObserver(() => {
       activateNativeRussian();
@@ -796,8 +1021,14 @@
   });
 
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", buildCommandBar);
+    document.addEventListener("DOMContentLoaded", () => {
+      const initialRoute = routeFromQuery();
+      if (initialRoute) openRoute(initialRoute);
+      buildCommandBar();
+    });
   } else {
+    const initialRoute = routeFromQuery();
+    if (initialRoute) openRoute(initialRoute);
     buildCommandBar();
   }
 })();

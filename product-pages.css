@@ -206,6 +206,76 @@ h1 {
   transform: translateY(-1px);
 }
 
+.beta-launch-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.beta-launch-grid a {
+  position: relative;
+  display: grid;
+  min-height: 210px;
+  align-content: end;
+  border: 1px solid rgba(239, 194, 119, 0.18);
+  border-radius: 8px;
+  padding: 18px;
+  color: var(--cream);
+  background:
+    radial-gradient(circle at 20% 0%, rgba(239, 194, 119, 0.16), transparent 14rem),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03)),
+    rgba(20, 15, 10, 0.78);
+  overflow: hidden;
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.26);
+  transition: transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
+}
+
+.beta-launch-grid a::before {
+  position: absolute;
+  inset: 0;
+  content: "";
+  background: linear-gradient(110deg, transparent, rgba(255, 246, 231, 0.16), transparent);
+  opacity: 0;
+  transform: translateX(-60%);
+  transition: opacity 0.22s ease, transform 0.56s ease;
+}
+
+.beta-launch-grid a:hover {
+  border-color: rgba(239, 194, 119, 0.58);
+  transform: translateY(-4px);
+  box-shadow: 0 34px 100px rgba(189, 136, 64, 0.18);
+}
+
+.beta-launch-grid a:hover::before {
+  opacity: 1;
+  transform: translateX(60%);
+}
+
+.beta-launch-grid span {
+  position: absolute;
+  top: 16px;
+  left: 18px;
+  color: rgba(239, 194, 119, 0.72);
+  font-size: 0.76rem;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+}
+
+.beta-launch-grid strong {
+  position: relative;
+  font-size: clamp(1.25rem, 2vw, 1.8rem);
+  line-height: 1;
+}
+
+.beta-launch-grid small {
+  position: relative;
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 0.88rem;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
 .beta-shell-bar h2 {
   margin: 0;
   font-size: clamp(1.8rem, 3vw, 3.4rem);
@@ -296,6 +366,10 @@ h1 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .beta-launch-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .beta-frame {
     min-height: 780px;
   }
@@ -371,6 +445,14 @@ h1 {
 
   .beta-route-tabs {
     grid-template-columns: 1fr;
+  }
+
+  .beta-launch-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .beta-launch-grid a {
+    min-height: 170px;
   }
 
   .guide-grid {

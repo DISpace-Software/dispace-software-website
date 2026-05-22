@@ -27,12 +27,12 @@
           <p class="eyebrow">Живая beta-версия</p>
           <h1>SeatMap beta уже доступна здесь</h1>
           <p class="lead">
-            Протестируйте Restaurant OS прямо на этой странице: интерактивная карта,
-            бронирования, CRM гостей, меню, blacklist и операционная панель ресторана.
+            Beta открывается в отдельной вкладке, чтобы интерактивная карта, CRM,
+            меню и обучающие подсказки работали на полном экране без ограничений iframe.
           </p>
           <div class="beta-actions">
-            <a class="button" href="#seatmap-live">Открыть beta</a>
-            <button class="back-link beta-route-button" type="button" data-route="admin">Admin CRM</button>
+            <a class="button" href="seatmap-app/index.html?route=reservation&tour=1" target="_blank" rel="noopener">Открыть beta</a>
+            <a class="back-link" href="seatmap-app/index.html?route=admin&tour=1" target="_blank" rel="noopener">Admin CRM</a>
             <a class="back-link" href="seatmap-guide.html">Инструкция</a>
           </div>
         </div>
@@ -44,59 +44,36 @@
       <section class="beta-shell" id="seatmap-live" aria-label="SeatMap beta application">
         <div class="beta-shell-bar">
           <div>
-            <p class="eyebrow">Рабочее демо</p>
-            <h2>Живая beta SeatMap</h2>
+            <p class="eyebrow">Полноэкранный режим</p>
+            <h2>Запустите beta в новой вкладке</h2>
           </div>
-          <a class="back-link" href="seatmap-app/index.html" target="_blank" rel="noopener">Открыть в новой вкладке</a>
+          <a class="back-link" href="seatmap-app/index.html?tour=1" target="_blank" rel="noopener">Открыть обучение</a>
         </div>
-        <div class="beta-route-tabs" aria-label="SeatMap beta sections">
-          <button type="button" data-route="home">Главная</button>
-          <button type="button" data-route="reservation">Карта бронирований</button>
-          <button type="button" data-route="menu">Цифровое меню</button>
-          <button type="button" data-route="admin">CRM-админка</button>
+        <div class="beta-launch-grid" aria-label="SeatMap beta sections">
+          <a href="seatmap-app/index.html?route=reservation&tour=1" target="_blank" rel="noopener">
+            <span>01</span>
+            <strong>Карта бронирований</strong>
+            <small>Выбор зоны, даты, времени, гостей и конкретного столика.</small>
+          </a>
+          <a href="seatmap-app/index.html?route=admin&tour=1" target="_blank" rel="noopener">
+            <span>02</span>
+            <strong>CRM-админка</strong>
+            <small>Подтверждение броней, гости, blacklist, столы и live operations.</small>
+          </a>
+          <a href="seatmap-app/index.html?route=menu&tour=1" target="_blank" rel="noopener">
+            <span>03</span>
+            <strong>Цифровое меню</strong>
+            <small>Меню ресторана и база для заказов после посадки гостей.</small>
+          </a>
+          <a href="seatmap-app/index.html?route=home&tour=1" target="_blank" rel="noopener">
+            <span>04</span>
+            <strong>Главная beta</strong>
+            <small>Общий вход в Restaurant OS и переключение между разделами.</small>
+          </a>
         </div>
-        <iframe
-          id="seatmap-frame"
-          class="beta-frame"
-          src="seatmap-app/index.html"
-          title="SeatMap beta"
-          loading="lazy"
-        ></iframe>
       </section>
     </main>
 
     <footer class="product-footer">SeatMap — Restaurant Operating System</footer>
-    <script>
-      const seatmapFrame = document.getElementById("seatmap-frame");
-      let seatmapFrameLoaded = false;
-
-      seatmapFrame?.addEventListener("load", () => {
-        seatmapFrameLoaded = true;
-        const pendingRoute = seatmapFrame.dataset.pendingRoute;
-        if (pendingRoute) {
-          window.setTimeout(() => sendSeatMapRoute(pendingRoute), 120);
-          delete seatmapFrame.dataset.pendingRoute;
-        }
-      });
-
-      function sendSeatMapRoute(route) {
-        seatmapFrame?.contentWindow?.postMessage({
-          type: "seatmap-open-route",
-          route,
-        }, "*");
-      }
-
-      document.querySelectorAll("[data-route]").forEach((button) => {
-        button.addEventListener("click", () => {
-          document.getElementById("seatmap-live")?.scrollIntoView({ behavior: "smooth", block: "start" });
-          if (!seatmapFrameLoaded && seatmapFrame) {
-            seatmapFrame.dataset.pendingRoute = button.dataset.route;
-          }
-          sendSeatMapRoute(button.dataset.route);
-          window.setTimeout(() => sendSeatMapRoute(button.dataset.route), 300);
-          window.setTimeout(() => sendSeatMapRoute(button.dataset.route), 900);
-        });
-      });
-    </script>
   </body>
 </html>
