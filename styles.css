@@ -1275,27 +1275,31 @@ main,
   50% { height: 88%; filter: hue-rotate(80deg); }
 }
 
-@media (min-width: 1021px) and (max-width: 1680px) {
+@media (min-width: 1021px) and (max-width: 1920px) {
   .site-header {
     width: min(1280px, calc(100% - 40px));
   }
 
   .hero {
-    grid-template-columns: minmax(0, 0.76fr) minmax(390px, 0.64fr);
-    gap: clamp(28px, 3vw, 52px);
+    grid-template-columns: minmax(0, 0.68fr) minmax(410px, 0.58fr);
+    gap: clamp(34px, 3.8vw, 72px);
     min-height: 88vh;
     padding-right: clamp(34px, 4.6vw, 76px);
     padding-left: clamp(34px, 4.6vw, 76px);
   }
 
+  .hero-copy {
+    max-width: 920px;
+  }
+
   .hero h1 {
-    font-size: clamp(5.4rem, 9.8vw, 10.9rem);
-    line-height: 0.84;
+    font-size: clamp(5.1rem, 7.45vw, 8.9rem);
+    line-height: 0.86;
   }
 
   .hero-lead {
-    max-width: 700px;
-    font-size: clamp(1.28rem, 1.85vw, 1.9rem);
+    max-width: 660px;
+    font-size: clamp(1.22rem, 1.55vw, 1.7rem);
   }
 
   .hero-device {
@@ -1304,7 +1308,7 @@ main,
   }
 
   .ipad {
-    width: min(35vw, 520px);
+    width: min(34vw, 540px);
     min-width: 300px;
   }
 }
@@ -1331,12 +1335,12 @@ main,
   }
 
   .hero {
-    grid-template-columns: minmax(0, 0.72fr) minmax(350px, 0.58fr);
-    gap: 24px;
+    grid-template-columns: minmax(0, 0.66fr) minmax(330px, 0.54fr);
+    gap: 28px;
   }
 
   .hero h1 {
-    font-size: clamp(4.9rem, 9.3vw, 8rem);
+    font-size: clamp(4.4rem, 7vw, 6.7rem);
   }
 
   .hero-lead {
