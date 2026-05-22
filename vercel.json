@@ -1,0 +1,32 @@
+{
+  "rewrites": [
+    {
+      "source": "/admin",
+      "destination": "/seatmap-app/index.html"
+    },
+    {
+      "source": "/reservation",
+      "destination": "/seatmap-app/index.html"
+    },
+    {
+      "source": "/menu",
+      "destination": "/seatmap-app/index.html"
+    },
+    {
+      "source": "/privacy",
+      "destination": "/seatmap-app/index.html"
+    },
+    {
+      "source": "/seatmap-app/admin",
+      "destination": "/seatmap-app/index.html"
+    },
+    {
+      "source": "/seatmap-app/reservation",
+      "destination": "/seatmap-app/index.html"
+    },
+    {
+      "source": "/seatmap-app/menu",
+      "destination": "/seatmap-app/index.html"
+    }
+  ]
+}

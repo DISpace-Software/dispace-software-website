@@ -5,7 +5,10 @@
     <script>
       (function () {
         var base = document.createElement("base");
-        base.href = new URL("./", window.location.href).href;
+        var isSeatMapPath = window.location.pathname.indexOf("/seatmap-app/") === 0;
+        base.href = isSeatMapPath
+          ? new URL("./", window.location.href).href
+          : new URL("/seatmap-app/", window.location.origin).href;
         document.head.prepend(base);
         if (!window.localStorage.getItem("restaurant-lang")) {
           window.localStorage.setItem("restaurant-lang", "ru");
@@ -18,8 +21,8 @@
     <script src="./mock-api.js?v=20260522"></script>
     <script type="module" crossorigin src="./assets/index-HGooWxr_.js"></script>
     <link rel="stylesheet" crossorigin href="./assets/index-NL5W4lJ_.css">
-    <link rel="stylesheet" href="./beta-luxury.css?v=20260522-guided" />
-    <script defer src="./beta-enhance.js?v=20260522-guided"></script>
+    <link rel="stylesheet" href="./beta-luxury.css?v=20260522-guided-fix" />
+    <script defer src="./beta-enhance.js?v=20260522-guided-fix"></script>
   </head>
   <body>
     <div id="root"></div>

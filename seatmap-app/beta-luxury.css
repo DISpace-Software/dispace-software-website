@@ -507,8 +507,8 @@ body::before {
 
 .seatmap-tutorial-scrim {
   inset: 0;
-  background: rgba(3, 2, 1, 0.56);
-  backdrop-filter: blur(5px);
+  background: transparent;
+  backdrop-filter: none;
   pointer-events: none;
 }
 
@@ -517,9 +517,9 @@ body::before {
   border: 2px solid rgba(255, 231, 180, 0.92);
   border-radius: 10px;
   box-shadow:
-    0 0 0 9999px rgba(3, 2, 1, 0.5),
+    0 0 0 9999px rgba(3, 2, 1, 0.62),
     0 0 34px rgba(231, 189, 120, 0.42),
-    inset 0 0 22px rgba(231, 189, 120, 0.16);
+    inset 0 0 0 1px rgba(255, 246, 231, 0.12);
   animation: tutorialPulse 1.7s ease-in-out infinite;
   pointer-events: none;
 }
@@ -695,7 +695,7 @@ body::before {
     box-shadow:
       0 0 0 9999px rgba(3, 2, 1, 0.5),
       0 0 46px rgba(231, 189, 120, 0.66),
-      inset 0 0 28px rgba(231, 189, 120, 0.22);
+      inset 0 0 0 1px rgba(255, 246, 231, 0.18);
   }
 }
 
