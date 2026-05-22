@@ -726,6 +726,11 @@
   }
 
   function findReservationMapRegion() {
+    const cached = findReservationMapRegion.cache;
+    if (cached?.element?.isConnected && performance.now() - cached.time < 1800) {
+      return cached.element;
+    }
+
     const root = document.querySelector("#root") || document.body;
     const candidates = Array.from(root.querySelectorAll("section, main > div, div")).map((element) => {
       if (element.closest(".seatmap-command-bar, .seatmap-tutorial")) return false;
@@ -749,7 +754,9 @@
       return { element, score, area };
     }).filter(Boolean);
 
-    return candidates.sort((a, b) => b.score - a.score || a.area - b.area)[0]?.element || null;
+    const element = candidates.sort((a, b) => b.score - a.score || a.area - b.area)[0]?.element || null;
+    findReservationMapRegion.cache = { element, time: performance.now() };
+    return element;
   }
 
   function findSuggestedTableTarget() {
@@ -936,6 +943,8 @@
     let index = 0;
     let renderToken = 0;
     let isAdvancing = false;
+    let activeTarget = null;
+    let activeMapRegion = null;
     const steps = getTutorialSteps();
     const spotlight = tutorial.querySelector(".seatmap-tutorial-spotlight");
     const pointer = tutorial.querySelector(".seatmap-tutorial-pointer");
@@ -1038,18 +1047,22 @@
       tutorial.classList.remove("is-action-done");
       tutorial.classList.toggle("is-map-step", step.mode === "map");
       tutorial.classList.add("is-waiting");
+      activeTarget = null;
+      activeMapRegion = null;
       step.before?.();
 
       window.setTimeout(() => {
         if (token !== renderToken || !tutorial.classList.contains("is-open")) return;
         let target = targetForStep(step);
         if (!target) target = document.querySelector("main") || document.body;
-        const scrollTarget = step.mode === "map" ? findReservationMapRegion() || target : target;
+        activeMapRegion = step.mode === "map" ? findReservationMapRegion() : null;
+        const scrollTarget = activeMapRegion || target;
         scrollTarget.scrollIntoView?.({ behavior: "smooth", block: step.mode === "map" ? "center" : "center", inline: "center" });
 
         window.setTimeout(() => {
           if (token !== renderToken || !tutorial.classList.contains("is-open")) return;
-          target = targetForStep(step) || target;
+          target = step.mode === "map" ? target : targetForStep(step) || target;
+          activeTarget = target;
           title.textContent = step.title;
           copy.textContent = step.text;
           wait.textContent = step.waiting || "Выполните подсвеченное действие";
@@ -1070,7 +1083,8 @@
 
     function currentTarget() {
       const step = steps[index];
-      return step ? targetForStep(step) : null;
+      if (!step) return null;
+      return activeTarget || targetForStep(step);
     }
 
     function actionableTargetFor(target) {
@@ -1088,7 +1102,7 @@
       const target = currentTarget();
 
       if (step.action === "main-click") {
-        const map = findReservationMapRegion();
+        const map = activeMapRegion;
         return eventName === "click" && Boolean(event.target.closest("#root, main, button, [role='button']")) &&
           (!map || map === event.target || map.contains(event.target));
       }
