@@ -499,6 +499,7 @@ body::before {
 
 .seatmap-tutorial-scrim,
 .seatmap-tutorial-spotlight,
+.seatmap-tutorial-hotspot,
 .seatmap-tutorial-pointer,
 .seatmap-tutorial-card {
   position: fixed;
@@ -534,6 +535,21 @@ body::before {
   content: "";
   background: linear-gradient(90deg, rgba(255, 231, 180, 0.92), transparent);
   transform: translateY(-50%);
+}
+
+.seatmap-tutorial-hotspot {
+  z-index: 225;
+  border: 0;
+  border-radius: 10px;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  pointer-events: none;
+}
+
+.seatmap-tutorial.is-open.is-map-step .seatmap-tutorial-hotspot {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .seatmap-tutorial-pointer {

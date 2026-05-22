@@ -702,10 +702,80 @@
     return validElements[0];
   }
 
+  function isRenderableTarget(element, options = {}) {
+    if (!isElement(element)) return false;
+    if (element.closest(".seatmap-command-bar, .seatmap-tutorial")) return false;
+    const rect = element.getBoundingClientRect();
+    const style = window.getComputedStyle(element);
+    const hasBox = rect.width > 2 &&
+      rect.height > 2 &&
+      style.visibility !== "hidden" &&
+      style.display !== "none";
+    if (!hasBox) return false;
+    if (!options.withinViewport) return true;
+    return rect.bottom > 0 &&
+      rect.right > 0 &&
+      rect.top < window.innerHeight &&
+      rect.left < window.innerWidth;
+  }
+
+  function isVisibleTarget(element) {
+    return isRenderableTarget(element, { withinViewport: true });
+  }
+
+  function makeVirtualTarget(elements, padding = 0) {
+    const visibleElements = elements.filter(isRenderableTarget);
+    if (!visibleElements.length) return null;
+
+    return {
+      getBoundingClientRect() {
+        const rects = visibleElements.map((element) => element.getBoundingClientRect());
+        const left = Math.min(...rects.map((rect) => rect.left)) - padding;
+        const top = Math.min(...rects.map((rect) => rect.top)) - padding;
+        const right = Math.max(...rects.map((rect) => rect.right)) + padding;
+        const bottom = Math.max(...rects.map((rect) => rect.bottom)) + padding;
+        return {
+          left,
+          top,
+          right,
+          bottom,
+          width: right - left,
+          height: bottom - top,
+        };
+      },
+      scrollIntoView(options) {
+        visibleElements[0]?.scrollIntoView?.(options);
+      },
+      contains(node) {
+        return visibleElements.some((element) => element === node || element.contains(node));
+      },
+      closest() {
+        return null;
+      },
+    };
+  }
+
+  function findVisibleActionableByText(patterns) {
+    const normalizedPatterns = patterns.map((pattern) => normalizeText(pattern).toLowerCase());
+    const candidates = Array.from(
+      document.querySelectorAll("button, a, label, [role='button'], [tabindex], input, select")
+    );
+
+    return candidates.find((element) => {
+      if (!isVisibleTarget(element)) return false;
+      const rawText = element.matches("input, select")
+        ? `${element.value || ""} ${element.getAttribute("placeholder") || ""} ${element.getAttribute("aria-label") || ""}`
+        : element.textContent || "";
+      const text = normalizeText(rawText).toLowerCase();
+      return text && normalizedPatterns.some((pattern) => text === pattern || text.includes(pattern));
+    }) || null;
+  }
+
   function findDateChoiceGroup() {
-    const today = findActionableText(["today", "сегодня"]);
-    const tomorrow = findActionableText(["tomorrow", "завтра"]);
-    const quickChoice = commonBoundedAncestor([today, tomorrow], { maxHeight: 150, minWidth: 180 });
+    const today = findVisibleActionableByText(["today", "сегодня"]);
+    const tomorrow = findVisibleActionableByText(["tomorrow", "завтра"]);
+    const quickChoice = makeVirtualTarget([today, tomorrow], 8) ||
+      commonBoundedAncestor([today, tomorrow], { maxHeight: 150, minWidth: 180 });
 
     if (quickChoice) return quickChoice;
 
@@ -725,34 +795,69 @@
     return dateField;
   }
 
+  function getVisibleTableCandidates(scope = document) {
+    const tableWords = /(seats?|мест|people|гостей)/i;
+    const numberPattern = /\b([1-9]|1\d|2\d|29)\b/;
+    const excludedWords = /(visit details|reservation details|детали визита|дата|date|time|время|guests|гости|today|tomorrow|сегодня|завтра|area|зона|up to|до\s+\d)/i;
+    const detailsPanelWords = /(visit details|reservation details|детали визита|available tables|доступные столы|capacity|вместимость|table\s+\d|стол\s+\d)/i;
+    const candidates = Array.from(scope.querySelectorAll("button, [role='button'], [tabindex], div, span"));
+
+    return candidates.filter((element) => {
+      if (!isRenderableTarget(element)) return false;
+      const text = normalizeText(element.textContent || "");
+      const compact = text.toLowerCase();
+      const rect = element.getBoundingClientRect();
+      if (rect.width < 26 || rect.height < 20 || rect.width > 190 || rect.height > 150) return false;
+      if (!numberPattern.test(text)) return false;
+      if (/[0-9]{1,2}\.[0-9]{1,2}\.[0-9]{2,4}/.test(text) || /\d{1,2}:\d{2}/.test(text)) return false;
+      if (excludedWords.test(compact) && !tableWords.test(compact)) return false;
+      let parent = element.parentElement;
+      for (let depth = 0; parent && depth < 4; depth += 1, parent = parent.parentElement) {
+        const parentText = normalizeText(parent.textContent || "").toLowerCase();
+        const parentRect = parent.getBoundingClientRect();
+        if (detailsPanelWords.test(parentText) && parentRect.width < 560) return false;
+      }
+      return /^([1-9]|1\d|2\d|29)$/.test(text) || tableWords.test(compact);
+    });
+  }
+
   function findReservationMapRegion() {
     const cached = findReservationMapRegion.cache;
-    if (cached?.element?.isConnected && performance.now() - cached.time < 1800) {
+    if (cached?.element && (!isElement(cached.element) || cached.element.isConnected) && performance.now() - cached.time < 1000) {
       return cached.element;
     }
 
     const root = document.querySelector("#root") || document.body;
-    const candidates = Array.from(root.querySelectorAll("section, main > div, div")).map((element) => {
-      if (element.closest(".seatmap-command-bar, .seatmap-tutorial")) return false;
-      const text = normalizeText(element.textContent || "").toLowerCase();
-      const rect = element.getBoundingClientRect();
-      if (rect.width < 240 || rect.height < 260) return false;
-      const tableNumberCount = (text.match(/\b([1-9]|1\d|2\d|29)\b/g) || []).length;
-      const hasMapMarkers = ["entrance", "windows", "wall", "вход", "окна", "стена"].some((word) =>
-        text.includes(word)
-      );
-      const hasTableWords = ["seats", "мест", "table", "стол"].some((word) => text.includes(word));
-      const looksLikeVisitDetails = ["visit details", "детали визита", "date", "дата", "time", "время", "guests", "гости"].some((word) =>
-        text.includes(word)
-      );
+    const tableCandidates = getVisibleTableCandidates(root);
+    const compactMap = makeVirtualTarget(tableCandidates, 28);
+    if (compactMap) {
+      findReservationMapRegion.cache = { element: compactMap, time: performance.now() };
+      return compactMap;
+    }
 
-      if (tableNumberCount < 8 || !hasTableWords) return false;
-      if (looksLikeVisitDetails && !hasMapMarkers) return false;
+    const candidates = Array.from(root.querySelectorAll("section, main > div, div"))
+      .map((element) => {
+        if (!isVisibleTarget(element)) return false;
+        const text = normalizeText(element.textContent || "").toLowerCase();
+        const rect = element.getBoundingClientRect();
+        if (rect.width < 220 || rect.height < 240) return false;
+        const tableNumberCount = (text.match(/\b([1-9]|1\d|2\d|29)\b/g) || []).length;
+        const hasMapMarkers = ["entrance", "windows", "wall", "вход", "окна", "стена"].some((word) =>
+          text.includes(word)
+        );
+        const hasTableWords = ["seats", "мест", "table", "стол"].some((word) => text.includes(word));
+        const looksLikeVisitDetails = ["visit details", "детали визита", "date", "дата", "time", "время", "guests", "гости"].some((word) =>
+          text.includes(word)
+        );
 
-      const area = rect.width * rect.height;
-      const score = tableNumberCount * 12 + (hasMapMarkers ? 80 : 0) - Math.min(area / 90000, 40);
-      return { element, score, area };
-    }).filter(Boolean);
+        if (tableNumberCount < 6 || !hasTableWords) return false;
+        if (looksLikeVisitDetails && !hasMapMarkers) return false;
+
+        const area = rect.width * rect.height;
+        const score = tableNumberCount * 12 + (hasMapMarkers ? 80 : 0) - Math.min(area / 90000, 40);
+        return { element, score, area };
+      })
+      .filter(Boolean);
 
     const element = candidates.sort((a, b) => b.score - a.score || a.area - b.area)[0]?.element || null;
     findReservationMapRegion.cache = { element, time: performance.now() };
@@ -760,24 +865,20 @@
   }
 
   function findSuggestedTableTarget() {
-    const map = findReservationMapRegion();
-    if (!map) return null;
-
-    const candidates = Array.from(map.querySelectorAll("button, [role='button'], [tabindex], div, span")).filter((element) => {
-      if (element.closest(".seatmap-command-bar, .seatmap-tutorial")) return false;
+    const candidates = getVisibleTableCandidates(document).filter((element) => {
       const text = normalizeText(element.textContent || "");
-      const rect = element.getBoundingClientRect();
-      if (rect.width < 28 || rect.height < 24 || rect.width > 220 || rect.height > 160) return false;
       return /\b(5|6|8|20|21|24|25|26|27|28|29)\b/.test(text) || /seats|мест|people|гостей/i.test(text);
     });
 
     return candidates.sort((a, b) => {
       const aRect = a.getBoundingClientRect();
       const bRect = b.getBoundingClientRect();
+      const aPriority = /\b20\b/.test(normalizeText(a.textContent || "")) ? -600 : 0;
+      const bPriority = /\b20\b/.test(normalizeText(b.textContent || "")) ? -600 : 0;
       const aCenter = Math.abs(aRect.left + aRect.width / 2 - window.innerWidth / 2) + Math.abs(aRect.top + aRect.height / 2 - window.innerHeight / 2);
       const bCenter = Math.abs(bRect.left + bRect.width / 2 - window.innerWidth / 2) + Math.abs(bRect.top + bRect.height / 2 - window.innerHeight / 2);
-      return aCenter - bCenter;
-    })[0] || map;
+      return (aCenter + aPriority) - (bCenter + bPriority);
+    })[0] || findReservationMapRegion();
   }
 
   function getTutorialSteps() {
@@ -922,6 +1023,7 @@
     tutorial.innerHTML = `
       <div class="seatmap-tutorial-scrim"></div>
       <div class="seatmap-tutorial-spotlight"></div>
+      <button class="seatmap-tutorial-hotspot" type="button" aria-label="Выбрать подсвеченную область"></button>
       <div class="seatmap-tutorial-pointer">Выберите здесь</div>
       <div class="seatmap-tutorial-card" role="dialog" aria-live="polite" aria-label="Обучение SeatMap">
         <p class="seatmap-tutorial-kicker">Обучение</p>
@@ -948,6 +1050,7 @@
     let activeMapRegion = null;
     const steps = getTutorialSteps();
     const spotlight = tutorial.querySelector(".seatmap-tutorial-spotlight");
+    const hotspot = tutorial.querySelector(".seatmap-tutorial-hotspot");
     const pointer = tutorial.querySelector(".seatmap-tutorial-pointer");
     const card = tutorial.querySelector(".seatmap-tutorial-card");
     const title = tutorial.querySelector("h2");
@@ -998,6 +1101,10 @@
       spotlight.style.height = `${spotlightRect.height}px`;
       spotlight.style.left = `${spotlightRect.left}px`;
       spotlight.style.top = `${spotlightRect.top}px`;
+      hotspot.style.width = `${spotlightRect.width}px`;
+      hotspot.style.height = `${spotlightRect.height}px`;
+      hotspot.style.left = `${spotlightRect.left}px`;
+      hotspot.style.top = `${spotlightRect.top}px`;
       pointer.style.left = `${Math.min(window.innerWidth - 156, Math.max(12, spotlightRect.left + spotlightRect.width / 2 - 70))}px`;
       pointer.style.top = `${Math.max(12, spotlightRect.top - 44)}px`;
 
@@ -1086,15 +1193,26 @@
       return target?.closest?.("button, a, label, [role='button'], [tabindex], input, select, textarea") || target;
     }
 
+    function targetContainsNode(target, node) {
+      if (!target || !isElement(node)) return false;
+      return target === node || Boolean(target.contains?.(node));
+    }
+
+    function nodeContainsTarget(node, target) {
+      return isElement(node) && isElement(target) && node.contains(target);
+    }
+
     function matchesCurrentAction(event, eventName) {
       if (!tutorial.classList.contains("is-open")) return false;
       if (isAdvancing) return false;
       if (clickListenerPaused) return false;
       if (!isElement(event.target)) return false;
-      if (event.target.closest(".seatmap-tutorial")) return false;
 
       const step = steps[index];
       if (!step) return false;
+      if (eventName === "hotspot") return step.action === "main-click";
+      if (event.target.closest(".seatmap-tutorial")) return false;
+
       const target = activeTarget;
       if (!target && step.action !== "main-click") return false;
 
@@ -1108,23 +1226,44 @@
         const actionTarget = actionableTargetFor(target);
         return ["input", "change"].includes(eventName) &&
           event.target.matches("input, select, textarea") &&
-          (!actionTarget || actionTarget === event.target || actionTarget.contains(event.target));
+          (!actionTarget || targetContainsNode(actionTarget, event.target));
       }
 
       if (step.action === "click-or-change") {
         const actionTarget = actionableTargetFor(target);
         if (["input", "change"].includes(eventName) && event.target.matches("input, select, textarea")) {
-          return !actionTarget || actionTarget === event.target || actionTarget.contains(event.target);
+          return !actionTarget || targetContainsNode(actionTarget, event.target);
         }
-        return eventName === "click" && (!actionTarget || actionTarget === event.target || actionTarget.contains(event.target) || event.target.contains(actionTarget));
+        return eventName === "click" &&
+          (!actionTarget || targetContainsNode(actionTarget, event.target) || nodeContainsTarget(event.target, actionTarget));
       }
 
       if (step.action === "click") {
         const actionTarget = actionableTargetFor(target);
-        return eventName === "click" && (!actionTarget || actionTarget === event.target || actionTarget.contains(event.target) || event.target.contains(actionTarget));
+        return eventName === "click" &&
+          (!actionTarget || targetContainsNode(actionTarget, event.target) || nodeContainsTarget(event.target, actionTarget));
       }
 
       return false;
+    }
+
+    function isInsideTarget(target, node) {
+      if (!target || !isElement(node)) return false;
+      return target === node ||
+        Boolean(target.contains?.(node)) ||
+        (isElement(target) && Boolean(node.contains(target)));
+    }
+
+    function interceptMapStepClick(event) {
+      if (!tutorial.classList.contains("is-open")) return;
+      if (event.target.closest?.(".seatmap-tutorial")) return;
+      const step = steps[index];
+      if (step?.action !== "main-click") return;
+      if (!isInsideTarget(activeTarget, event.target) && !isInsideTarget(activeMapRegion, event.target)) return;
+
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      completeCurrentAction(event, "hotspot");
     }
 
     function completeCurrentAction(event, eventName) {
@@ -1146,7 +1285,13 @@
     });
     skip.addEventListener("click", close);
     launch.addEventListener("click", () => open(0));
+    hotspot.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      completeCurrentAction(event, "hotspot");
+    });
     window.addEventListener("resize", render);
+    document.addEventListener("click", interceptMapStepClick, true);
     document.addEventListener("click", (event) => window.setTimeout(() => completeCurrentAction(event, "click"), 0));
     document.addEventListener("input", (event) => completeCurrentAction(event, "input"));
     document.addEventListener("change", (event) => completeCurrentAction(event, "change"));
