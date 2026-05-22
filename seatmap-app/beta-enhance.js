@@ -723,7 +723,7 @@
     return isRenderableTarget(element, { withinViewport: true });
   }
 
-  function makeVirtualTarget(elements, padding = 0) {
+  function makeVirtualTarget(elements, padding = 0, options = {}) {
     const visibleElements = elements.filter(isRenderableTarget);
     if (!visibleElements.length) return null;
 
@@ -731,9 +731,9 @@
       getBoundingClientRect() {
         const rects = visibleElements.map((element) => element.getBoundingClientRect());
         const left = Math.min(...rects.map((rect) => rect.left)) - padding;
-        const top = Math.min(...rects.map((rect) => rect.top)) - padding;
+        const top = Math.min(...rects.map((rect) => rect.top)) - padding + (options.yOffset || 0);
         const right = Math.max(...rects.map((rect) => rect.right)) + padding;
-        const bottom = Math.max(...rects.map((rect) => rect.bottom)) + padding;
+        const bottom = Math.max(...rects.map((rect) => rect.bottom)) + padding + (options.yOffset || 0);
         return {
           left,
           top,
@@ -774,12 +774,13 @@
   function findDateChoiceGroup() {
     const today = findVisibleActionableByText(["today", "сегодня"]);
     const tomorrow = findVisibleActionableByText(["tomorrow", "завтра"]);
-    const quickChoice = makeVirtualTarget([today, tomorrow], 8) ||
+    const dateField = findFormControl(["date", "дата"]);
+    const quickChoice = makeVirtualTarget([dateField, today, tomorrow], 8, { yOffset: -12 }) ||
+      makeVirtualTarget([today, tomorrow], 8, { yOffset: -18 }) ||
       commonBoundedAncestor([today, tomorrow], { maxHeight: 150, minWidth: 180 });
 
     if (quickChoice) return quickChoice;
 
-    const dateField = findFormControl(["date", "дата"]);
     if (!dateField) return null;
 
     let node = dateField.parentElement;
@@ -881,6 +882,148 @@
     })[0] || findReservationMapRegion();
   }
 
+  function tableNumberFromElement(element) {
+    const text = normalizeText(element?.textContent || "");
+    const match = text.match(/\b([1-9]|1\d|2\d|29)\b/);
+    return match ? Number(match[1]) : 0;
+  }
+
+  function tableCapacityFromElement(element) {
+    const text = normalizeText(element?.textContent || "").toLowerCase();
+    const match = text.match(/\b(\d+)\s*(seats?|мест|people|гостей)\b/i);
+    if (match) return Number(match[1]);
+    const tableNumber = tableNumberFromElement(element);
+    if ([5, 6, 8, 9, 10, 11, 24, 25, 28, 29].includes(tableNumber)) return 6;
+    return 4;
+  }
+
+  function getGuestCount() {
+    const guestField = findFormControl(["guests", "гости", "people", "количество"]);
+    const numericValue = Number(guestField?.value || "");
+    if (Number.isFinite(numericValue) && numericValue > 0) return numericValue;
+    const selectedText = normalizeText(guestField?.selectedOptions?.[0]?.textContent || "");
+    const selectedNumber = Number(selectedText.match(/\d+/)?.[0] || "");
+    return Number.isFinite(selectedNumber) && selectedNumber > 0 ? selectedNumber : 4;
+  }
+
+  function expectedTableCount() {
+    const guests = getGuestCount();
+    const candidates = getVisibleTableCandidates(document)
+      .map((element) => tableCapacityFromElement(element))
+      .filter(Boolean)
+      .sort((a, b) => b - a);
+
+    let capacity = 0;
+    let count = 0;
+    for (const seats of candidates) {
+      capacity += seats;
+      count += 1;
+      if (capacity >= guests) return Math.max(1, count);
+    }
+
+    return Math.max(1, Math.ceil(guests / 6));
+  }
+
+  function getRecommendedTableTargets() {
+    const guests = getGuestCount();
+    const preferredNumbers = guests > 6 ? [24, 25, 26, 27, 28, 29, 20, 21, 22, 23, 5, 6] : [20, 5, 24, 25, 21, 22, 23];
+    const candidates = getVisibleTableCandidates(document)
+      .map((element) => ({
+        element,
+        number: tableNumberFromElement(element),
+        capacity: tableCapacityFromElement(element),
+        rect: element.getBoundingClientRect(),
+      }))
+      .filter((item) => item.number);
+
+    const sorted = candidates.sort((a, b) => {
+      const aPreferred = preferredNumbers.indexOf(a.number);
+      const bPreferred = preferredNumbers.indexOf(b.number);
+      const aRank = aPreferred === -1 ? 999 : aPreferred;
+      const bRank = bPreferred === -1 ? 999 : bPreferred;
+      const aCenter = Math.abs(a.rect.left + a.rect.width / 2 - window.innerWidth / 2) + Math.abs(a.rect.top + a.rect.height / 2 - window.innerHeight / 2);
+      const bCenter = Math.abs(b.rect.left + b.rect.width / 2 - window.innerWidth / 2) + Math.abs(b.rect.top + b.rect.height / 2 - window.innerHeight / 2);
+      return aRank - bRank || b.capacity - a.capacity || aCenter - bCenter;
+    });
+
+    let capacity = 0;
+    const selected = [];
+    for (const item of sorted) {
+      if (selected.some((current) => current.number === item.number)) continue;
+      selected.push(item);
+      capacity += item.capacity;
+      if (capacity >= guests) break;
+    }
+
+    return selected.map((item) => item.element);
+  }
+
+  function findRecommendedTablesTarget() {
+    return makeVirtualTarget(getRecommendedTableTargets(), 18) || findSuggestedTableTarget();
+  }
+
+  function findConsentGroup() {
+    const checkboxes = Array.from(document.querySelectorAll("input[type='checkbox']")).filter(isRenderableTarget);
+    return makeVirtualTarget(checkboxes, 12) || checkboxes[0] || findTextElement(["privacy", "marketing", "gdpr", "соглас", "личн"]);
+  }
+
+  function findReservationContactForm() {
+    const controls = [
+      findFormControl(["guest name", "имя гостя", "name", "име"]),
+      findFormControl(["phone", "телефон"]),
+      findFormControl(["email", "имейл"]),
+      findFormControl(["birthday", "рожд"]),
+      findConsentGroup(),
+    ].filter(Boolean);
+    return makeVirtualTarget(controls, 16) || controls[0] || findActionableText(["создать бронь", "create reservation", "reserve"]);
+  }
+
+  function getReservationContactState() {
+    const nameField = findFormControl(["guest name", "имя гостя", "name", "име"]);
+    const phoneField = findFormControl(["phone", "телефон"]);
+    const emailField = findFormControl(["email", "имейл"]);
+    const birthdayField = findFormControl(["birthday", "рожд"]);
+    return {
+      nameField,
+      phoneField,
+      emailField,
+      birthdayField,
+      filled: {
+        name: Boolean(normalizeText(nameField?.value || "")),
+        phone: Boolean(normalizeText(phoneField?.value || "")),
+        email: Boolean(normalizeText(emailField?.value || "")),
+        birthday: Boolean(normalizeText(birthdayField?.value || "")),
+      },
+    };
+  }
+
+  function findLoginArea() {
+    return document.querySelector(".seatmap-credentials-card")?.closest("form") ||
+      document.querySelector("form") ||
+      document.querySelector(".seatmap-credentials-card") ||
+      findTextElement(["admin login", "вход", "пароль"]);
+  }
+
+  function findAdminPanelTarget(patterns) {
+    return findActionGroup(patterns) || findActionableText(patterns) || findTextElement(patterns);
+  }
+
+  function findClickedTableElement(node) {
+    if (!isElement(node)) return null;
+    let current = node;
+    while (current && current !== document.body) {
+      if (current.closest?.(".seatmap-tutorial, .seatmap-command-bar")) return null;
+      if (tableNumberFromElement(current) && getVisibleTableCandidates(document).some((table) => table === current)) {
+        return current;
+      }
+      const matchingDescendant = Array.from(current.querySelectorAll?.("button, [role='button'], [tabindex], div, span") || [])
+        .find((element) => tableNumberFromElement(element) && getVisibleTableCandidates(document).some((table) => table === element));
+      if (matchingDescendant) return matchingDescendant;
+      current = current.parentElement;
+    }
+    return null;
+  }
+
   function getTutorialSteps() {
     const openDock = () => {
       const bar = document.querySelector(".seatmap-command-bar");
@@ -953,51 +1096,133 @@
       {
         route: "reservation",
         find: () =>
+          findRecommendedTablesTarget() ||
           findSuggestedTableTarget() ||
           findReservationMapRegion() ||
           document.querySelector("main"),
-        title: "Теперь выберите стол на карте",
-        text: "Все данные визита заполнены. Карта открыта для выбора: стрелка показывает подходящий стол или лучший вариант комбинации для компании.",
+        title: "Выберите подходящие столы",
+        text: "SeatMap подбирает стол или комбинацию столов под количество гостей. Если гостей больше вместимости одного стола, выберите несколько подсвеченных столов рядом.",
         side: "right",
-        action: "main-click",
-        waiting: "Кликните по подсвеченному столику или варианту",
+        action: "table-selection",
+        waiting: "Выберите нужное количество подсвеченных столов",
         spotlightPadding: 24,
         mode: "map",
       },
       {
         route: "reservation",
+        find: () => findReservationContactForm(),
+        title: "Заполните данные гостя",
+        text: "Теперь заполните контактную форму: имя гостя, телефон, email по желанию и дату рождения, если гость хочет персональные предложения.",
+        side: "left",
+        action: "contact-form",
+        waiting: "Введите минимум имя и телефон гостя",
+        spotlightPadding: 16,
+      },
+      {
+        route: "reservation",
+        find: () => findConsentGroup(),
+        title: "Подтвердите согласия",
+        text: "Отметьте согласие на обработку данных. Маркетинговое согласие можно использовать для loyalty и персональных предложений.",
+        side: "left",
+        action: "click-or-change",
+        waiting: "Поставьте нужные галочки согласий",
+        spotlightPadding: 16,
+      },
+      {
+        route: "reservation",
         find: () => findActionableText(["reserve", "забронировать", "создать бронь"]),
         title: "Создайте бронь",
-        text: "Нажмите кнопку бронирования. После этого заявка появится в CRM, а система покажет следующий шаг.",
+        text: "Теперь нажмите кнопку создания брони. Только после этого заявка попадёт в CRM и появится инструкция для администратора.",
         side: "left",
         action: "click",
         waiting: "Нажмите кнопку бронирования",
         spotlightPadding: 14,
       },
       {
-        route: "admin",
-        selector: "[data-seatmap-route='admin']",
-        title: "Переход в CRM",
-        text: "Откройте CRM-админку через навигацию. Там ресторан работает с бронями и гостями.",
-        side: "right",
+        route: "reservation",
+        find: () => document.querySelector(".seatmap-guide-dialog") || findActionableText(["перейти в crm", "crm-админку"]),
+        title: "Перейдите к обработке брони",
+        text: "После создания брони система показывает следующий рабочий шаг: перейти в CRM и обработать заявку как администратор ресторана.",
+        side: "left",
         action: "click",
-        before: () => {
-          closeReservationGuide();
-          openDock();
-        },
-        waiting: "Нажмите «CRM-админка»",
-        manualRoute: true,
-        spotlightPadding: 10,
+        waiting: "Нажмите «Перейти в CRM-админку»",
+        spotlightPadding: 18,
       },
       {
         route: "admin",
-        find: () => document.querySelector(".seatmap-credentials-card") || findTextElement(["креденшелы", "email", "пароль"]),
+        find: () => findLoginArea(),
         title: "Демо-вход уже подсказан",
-        text: "Нажмите «Заполнить», затем можно посмотреть пароль через кнопку с глазом и войти в панель.",
-        side: "right",
+        text: "Нажмите «Заполнить»: email и пароль подставятся автоматически. Карточка обучения теперь не перекрывает поля, чтобы пароль было удобно проверить глазиком.",
+        side: "left",
         action: "click",
         waiting: "Нажмите «Заполнить»",
+        spotlightPadding: 22,
+        cardSize: "wide",
+      },
+      {
+        route: "admin",
+        find: () => findActionableText(["войти", "влез", "login"]),
+        title: "Войдите в CRM",
+        text: "Нажмите кнопку входа. После авторизации откроется рабочая CRM-панель ресторана.",
+        side: "left",
+        action: "click",
+        waiting: "Нажмите кнопку входа",
         spotlightPadding: 14,
+      },
+      {
+        route: "admin",
+        find: () => findAdminPanelTarget(["все бронирования", "ожидают", "подтверждены", "blacklist"]),
+        title: "Главный пульт ресторана",
+        text: "Верхние метрики показывают загрузку: все брони, ожидающие, подтверждённые и blacklist. Это быстрый статус смены.",
+        side: "left",
+        action: "next",
+        waiting: "Посмотрите на метрики CRM",
+        spotlightPadding: 18,
+        cardSize: "wide",
+      },
+      {
+        route: "admin",
+        find: () => findAdminPanelTarget(["резервации", "новая резервация", "блокировать", "карта", "клиенты"]),
+        title: "Разделы CRM",
+        text: "Вкладки переключают рабочие зоны: брони, ручное создание, блокировки, карту ресторана, гостей, админов и аудит.",
+        side: "left",
+        action: "click-or-next",
+        waiting: "Откройте любую вкладку или нажмите «Я сделал»",
+        spotlightPadding: 14,
+        cardSize: "wide",
+      },
+      {
+        route: "admin",
+        find: () => findAdminPanelTarget(["подтвердить", "approve", "отменить", "no-show"]),
+        title: "Работа с заявкой",
+        text: "В списке бронирований администратор подтверждает бронь, отменяет её или отмечает no-show. Это основная операционная очередь.",
+        side: "left",
+        action: "click-or-next",
+        waiting: "Попробуйте действие с бронью или нажмите «Я сделал»",
+        spotlightPadding: 16,
+        cardSize: "wide",
+      },
+      {
+        route: "admin",
+        find: () => findAdminPanelTarget(["смена столов", "запази масите", "сохранить столы", "change tables"]),
+        title: "Перенос и комбинации столов",
+        text: "В CRM можно менять столы для брони: выбрать другой стол, сохранить комбинацию и освободить место при no-show.",
+        side: "left",
+        action: "next",
+        waiting: "Посмотрите блок смены столов",
+        spotlightPadding: 18,
+        cardSize: "wide",
+      },
+      {
+        route: "admin",
+        find: () => findAdminPanelTarget(["карта ресторана", "restaurant map", "добавить стол", "сохранить карту"]),
+        title: "Карта ресторана в админке",
+        text: "В разделе карты администратор может передвигать столы, добавлять новые, менять вместимость и сохранять layout для сайта.",
+        side: "left",
+        action: "click-or-next",
+        waiting: "Откройте карту или нажмите «Я сделал»",
+        spotlightPadding: 18,
+        cardSize: "wide",
       },
       {
         route: "menu",
@@ -1010,6 +1235,17 @@
         waiting: "Нажмите «Цифровое меню»",
         manualRoute: true,
         spotlightPadding: 10,
+      },
+      {
+        route: "menu",
+        find: () => findAdminPanelTarget(["cms меню", "список блюд", "добавить блюдо", "menu cms", "add dish"]),
+        title: "CMS меню",
+        text: "Меню управляется как часть Restaurant OS: блюда, категории, цены и активность синхронизируются с гостевым меню и CRM.",
+        side: "left",
+        action: "next",
+        waiting: "Посмотрите структуру меню",
+        spotlightPadding: 18,
+        cardSize: "wide",
       },
     ];
   }
@@ -1048,6 +1284,7 @@
     let clickListenerPaused = false;
     let activeTarget = null;
     let activeMapRegion = null;
+    let selectedTutorialTables = new Set();
     const steps = getTutorialSteps();
     const spotlight = tutorial.querySelector(".seatmap-tutorial-spotlight");
     const hotspot = tutorial.querySelector(".seatmap-tutorial-hotspot");
@@ -1094,7 +1331,7 @@
       };
     }
 
-    function positionAround(target, side, padding = 10) {
+    function positionAround(target, side, padding = 10, options = {}) {
       const spotlightRect = getSpotlightRect(target, padding);
       const rect = spotlightRect.source;
       spotlight.style.width = `${spotlightRect.width}px`;
@@ -1109,7 +1346,8 @@
       pointer.style.top = `${Math.max(12, spotlightRect.top - 44)}px`;
 
       const isMobile = window.matchMedia("(max-width: 700px)").matches;
-      const cardWidth = Math.min(isMobile ? 340 : 360, window.innerWidth - 28);
+      const isWide = options.cardSize === "wide";
+      const cardWidth = Math.min(isMobile ? 340 : isWide ? 520 : 360, window.innerWidth - 28);
       const preferRight = side !== "left";
       let left = preferRight ? rect.right + 24 : rect.left - cardWidth - 24;
       if (left < 14) left = 14;
@@ -1133,6 +1371,7 @@
         card.style.left = `${left}px`;
         card.style.top = `${top}px`;
       }
+      card.classList.toggle("is-wide", isWide);
       card.dataset.side = preferRight ? "right" : "left";
     }
 
@@ -1154,30 +1393,34 @@
 
       tutorial.classList.remove("is-action-done");
       tutorial.classList.toggle("is-map-step", step.mode === "map");
+      tutorial.classList.toggle("is-table-step", step.action === "table-selection");
       tutorial.classList.add("is-waiting");
       activeTarget = null;
       activeMapRegion = null;
+      if (step.action !== "table-selection") selectedTutorialTables = new Set();
       step.before?.();
 
       window.setTimeout(() => {
         if (token !== renderToken || !tutorial.classList.contains("is-open")) return;
         activeMapRegion = step.mode === "map" ? findReservationMapRegion() : null;
-        let target = step.mode === "map" ? findSuggestedTableTarget() || activeMapRegion : targetForStep(step);
+        let target = step.mode === "map" ? targetForStep(step) || findSuggestedTableTarget() || activeMapRegion : targetForStep(step);
         if (!target) target = document.querySelector("main") || document.body;
         const scrollTarget = activeMapRegion || target;
         scrollTarget.scrollIntoView?.({ behavior: "smooth", block: step.mode === "map" ? "center" : "center", inline: "center" });
 
         window.setTimeout(() => {
           if (token !== renderToken || !tutorial.classList.contains("is-open")) return;
-          target = step.mode === "map" ? target : targetForStep(step) || target;
+          target = step.mode === "map" ? targetForStep(step) || target : targetForStep(step) || target;
           activeTarget = target;
           title.textContent = step.title;
           copy.textContent = step.text;
           wait.textContent = step.waiting || "Выполните подсвеченное действие";
+          if (step.action === "table-selection") updateTableSelectionWait();
+          if (step.action === "contact-form") updateContactFormWait();
           progress.textContent = `${index + 1} / ${steps.length}`;
           prev.disabled = index === 0;
           next.textContent = index === steps.length - 1 ? "Готово" : "Я сделал";
-          positionAround(target, step.side, step.spotlightPadding || 10);
+          positionAround(target, step.side, step.spotlightPadding || 10, step);
         }, 260);
       }, 180);
     }
@@ -1222,6 +1465,14 @@
           (!map || map === event.target || map.contains(event.target));
       }
 
+      if (step.action === "table-selection") {
+        return eventName === "table-selection";
+      }
+
+      if (step.action === "next") {
+        return false;
+      }
+
       if (step.action === "change") {
         const actionTarget = actionableTargetFor(target);
         return ["input", "change"].includes(eventName) &&
@@ -1234,6 +1485,26 @@
         if (["input", "change"].includes(eventName) && event.target.matches("input, select, textarea")) {
           return !actionTarget || targetContainsNode(actionTarget, event.target);
         }
+        return eventName === "click" &&
+          (!actionTarget || targetContainsNode(actionTarget, event.target) || nodeContainsTarget(event.target, actionTarget));
+      }
+
+      if (step.action === "input") {
+        const actionTarget = actionableTargetFor(target);
+        return eventName === "input" &&
+          event.target.matches("input, select, textarea") &&
+          (!actionTarget || targetContainsNode(actionTarget, event.target));
+      }
+
+      if (step.action === "contact-form") {
+        if (!["input", "change"].includes(eventName) || !event.target.matches("input, select, textarea")) return false;
+        const state = getReservationContactState();
+        updateContactFormWait();
+        return state.filled.name && state.filled.phone;
+      }
+
+      if (step.action === "click-or-next") {
+        const actionTarget = actionableTargetFor(target);
         return eventName === "click" &&
           (!actionTarget || targetContainsNode(actionTarget, event.target) || nodeContainsTarget(event.target, actionTarget));
       }
@@ -1258,12 +1529,47 @@
       if (!tutorial.classList.contains("is-open")) return;
       if (event.target.closest?.(".seatmap-tutorial")) return;
       const step = steps[index];
+      if (step?.action === "table-selection") {
+        const table = findClickedTableElement(event.target);
+        const tableNumber = tableNumberFromElement(table);
+        const recommended = getRecommendedTableTargets();
+        const clickedRecommended = recommended.some((element) => element === table || element.contains(table) || table?.contains(element));
+        if (!tableNumber || (!clickedRecommended && !isInsideTarget(activeMapRegion, event.target))) return;
+
+        selectedTutorialTables.add(tableNumber);
+        updateTableSelectionWait();
+        if (selectedTutorialTables.size >= expectedTableCount()) {
+          window.setTimeout(() => completeCurrentAction(event, "table-selection"), 180);
+        }
+        return;
+      }
+
       if (step?.action !== "main-click") return;
       if (!isInsideTarget(activeTarget, event.target) && !isInsideTarget(activeMapRegion, event.target)) return;
 
       event.preventDefault();
       event.stopImmediatePropagation();
       completeCurrentAction(event, "hotspot");
+    }
+
+    function updateTableSelectionWait() {
+      const expected = expectedTableCount();
+      const selected = selectedTutorialTables.size;
+      wait.textContent = expected > 1
+        ? `Выбрано ${selected} из ${expected}. Для этой компании нужна комбинация столов.`
+        : selected > 0
+          ? "Стол выбран. Отлично, можно продолжать."
+          : "Кликните по подсвеченному столику";
+    }
+
+    function updateContactFormWait() {
+      const state = getReservationContactState();
+      const missing = [];
+      if (!state.filled.name) missing.push("имя");
+      if (!state.filled.phone) missing.push("телефон");
+      wait.textContent = missing.length
+        ? `Осталось заполнить: ${missing.join(" и ")}. Email и дата рождения необязательны.`
+        : "Контактные данные готовы. Email и день рождения можно оставить пустыми.";
     }
 
     function completeCurrentAction(event, eventName) {
