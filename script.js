@@ -2,6 +2,9 @@ const canvas = document.querySelector("#field");
 const ctx = canvas.getContext("2d");
 const glow = document.querySelector(".cursor-glow");
 const seatmapSection = document.querySelector(".seatmap-product");
+const siteHeader = document.querySelector(".site-header");
+const menuToggle = document.querySelector(".menu-toggle");
+const mobileMenu = document.querySelector(".mobile-menu");
 const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 let width = 0;
@@ -134,6 +137,32 @@ function updateMacbookOpen() {
   seatmapSection.style.setProperty("--mac-open", progress.toFixed(3));
 }
 
+function setMenuOpen(isOpen) {
+  if (!siteHeader || !menuToggle) return;
+  siteHeader.classList.toggle("menu-open", isOpen);
+  menuToggle.setAttribute("aria-expanded", String(isOpen));
+}
+
+function setupMobileMenu() {
+  if (!siteHeader || !menuToggle || !mobileMenu) return;
+
+  menuToggle.addEventListener("click", () => {
+    setMenuOpen(!siteHeader.classList.contains("menu-open"));
+  });
+
+  mobileMenu.querySelectorAll("a").forEach((link) => {
+    link.addEventListener("click", () => setMenuOpen(false));
+  });
+
+  document.addEventListener("click", (event) => {
+    if (!siteHeader.contains(event.target)) {
+      setMenuOpen(false);
+    }
+  });
+
+  window.addEventListener("resize", () => setMenuOpen(false));
+}
+
 document.querySelector(".contact-form").addEventListener("submit", (event) => {
   event.preventDefault();
   const button = event.currentTarget.querySelector("button");
@@ -155,6 +184,7 @@ window.addEventListener("scroll", updateMacbookOpen, { passive: true });
 resize();
 revealOnScroll();
 tiltCards();
+setupMobileMenu();
 updateMacbookOpen();
 movePointer({ clientX: pointer.x, clientY: pointer.y });
 draw();
