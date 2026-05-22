@@ -109,6 +109,7 @@ main,
 
 .brand,
 .main-nav,
+.header-actions,
 .hero-actions,
 .case-stats,
 .site-footer {
@@ -172,6 +173,11 @@ main,
 .menu-toggle,
 .mobile-menu {
   display: none;
+}
+
+.header-actions {
+  justify-content: flex-end;
+  gap: 8px;
 }
 
 .nav-cta,
@@ -1225,7 +1231,7 @@ main,
 
 @media (max-width: 1020px) {
   .site-header {
-    grid-template-columns: 1fr auto auto;
+    grid-template-columns: 1fr auto;
     width: min(820px, calc(100% - 24px));
   }
 
@@ -1236,10 +1242,13 @@ main,
   .menu-toggle {
     position: relative;
     z-index: 24;
-    display: inline-grid;
+    display: inline-flex;
+    flex-direction: column;
+    gap: 5px;
     width: 44px;
     height: 44px;
-    place-items: center;
+    align-items: center;
+    justify-content: center;
     border: 1px solid rgba(7, 16, 15, 0.16);
     border-radius: 8px;
     background: rgba(255, 255, 255, 0.38);
@@ -1421,7 +1430,8 @@ main,
     width: calc(100% - 20px);
     min-height: 58px;
     padding: 8px;
-    grid-template-columns: auto 1fr auto;
+    grid-template-columns: auto auto;
+    justify-content: space-between;
   }
 
   .brand span:last-child {
@@ -1434,8 +1444,8 @@ main,
   }
 
   .nav-cta {
-    padding-inline: 12px;
-    font-size: 0.82rem;
+    padding-inline: 11px;
+    font-size: 0.78rem;
     min-height: 40px;
     justify-self: end;
   }
