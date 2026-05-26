@@ -7,6 +7,7 @@
   };
   const initialParams = new URLSearchParams(window.location.search);
   const forceTutorial = initialParams.get("tour") === "1";
+  const skipTutorial = initialParams.get("tour") === "0";
 
   const languages = {
     bg: "Български",
@@ -540,6 +541,48 @@
     setNativeValue(field, value);
     field.dispatchEvent(new Event("input", { bubbles: true }));
     field.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+
+  function looksLikeReservationSubmit(button) {
+    if (!button) return false;
+    const text = normalizeText(button.textContent || "").toLowerCase();
+    return ["reserve", "забронировать", "создать бронь", "създай резервация", "create reservation"].some((word) =>
+      text.includes(word)
+    );
+  }
+
+  function ensureDemoReservationFields(button) {
+    if (getRouteFromPath() !== "reservation" || !looksLikeReservationSubmit(button)) return;
+
+    const form = button.closest("form") || document;
+    const fields = Array.from(form.querySelectorAll("input, textarea, select"));
+    const findField = (patterns) => {
+      const normalizedPatterns = patterns.map((pattern) => pattern.toLowerCase());
+      return fields.find((field) => {
+        const text = normalizeText(
+          `${field.name || ""} ${field.id || ""} ${field.type || ""} ${field.placeholder || ""} ${field.getAttribute("aria-label") || ""} ${field.closest("label")?.textContent || ""} ${field.closest("div")?.textContent || ""}`
+        ).toLowerCase();
+        return normalizedPatterns.some((pattern) => text.includes(pattern));
+      });
+    };
+
+    const nameField = findField(["guest name", "имя гостя", "име на гост", "name"]);
+    const phoneField = findField(["phone", "телефон"]);
+    const emailField = findField(["email", "имейл"]);
+
+    if (nameField && !normalizeText(nameField.value || "")) setFieldValue(nameField, "Demo Guest");
+    if (phoneField && !normalizeText(phoneField.value || "")) setFieldValue(phoneField, "+359 88 888 8888");
+    if (emailField && !normalizeText(emailField.value || "")) setFieldValue(emailField, "guest@seatmap.demo");
+
+    fields
+      .filter((field) => field.type === "checkbox")
+      .forEach((field) => {
+        if (!field.checked) {
+          field.checked = true;
+          field.dispatchEvent(new Event("input", { bubbles: true }));
+          field.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+      });
   }
 
   function setupAdminLoginHints() {
@@ -1432,6 +1475,70 @@
       render();
     }
 
+    function ensureEntryChoice() {
+      if (document.querySelector(".seatmap-entry-choice")) return;
+
+      const language = currentLanguage();
+      const copy = {
+        ru: {
+          kicker: "SeatMap beta",
+          title: "Как хотите попробовать систему?",
+          text: "Можно пройти короткое интерактивное обучение по бронированию, CRM и меню или сразу свободно открыть продукт.",
+          guide: "Пройти обучение",
+          free: "Без обучения",
+        },
+        en: {
+          kicker: "SeatMap beta",
+          title: "How would you like to try the system?",
+          text: "Take a short guided walkthrough for reservations, CRM and menu, or open the product freely.",
+          guide: "Start walkthrough",
+          free: "Explore freely",
+        },
+        bg: {
+          kicker: "SeatMap beta",
+          title: "Как искате да пробвате системата?",
+          text: "Минете кратко интерактивно обучение за резервации, CRM и меню или отворете продукта свободно.",
+          guide: "С обучение",
+          free: "Без обучение",
+        },
+      }[language] || {};
+
+      const modal = document.createElement("div");
+      modal.className = "seatmap-entry-choice";
+      modal.innerHTML = `
+        <div class="seatmap-entry-choice-dialog" role="dialog" aria-modal="true" aria-label="${copy.title}">
+          <p>${copy.kicker}</p>
+          <h1>${copy.title}</h1>
+          <span>${copy.text}</span>
+          <div>
+            <button class="seatmap-entry-guide" type="button">${copy.guide}</button>
+            <button class="seatmap-entry-free" type="button">${copy.free}</button>
+          </div>
+        </div>
+      `;
+
+      const closeChoice = () => {
+        modal.classList.remove("is-open");
+        window.setTimeout(() => modal.remove(), 220);
+      };
+
+      modal.querySelector(".seatmap-entry-guide").addEventListener("click", () => {
+        window.sessionStorage.setItem("seatmap:entry-choice-seen", "true");
+        window.localStorage.removeItem("seatmap:tutorial-seen");
+        closeChoice();
+        window.setTimeout(() => open(0), 260);
+      });
+
+      modal.querySelector(".seatmap-entry-free").addEventListener("click", () => {
+        window.sessionStorage.setItem("seatmap:entry-choice-seen", "true");
+        window.localStorage.setItem("seatmap:tutorial-seen", "true");
+        closeChoice();
+      });
+
+      document.body.appendChild(modal);
+      window.requestAnimationFrame(() => modal.classList.add("is-open"));
+    }
+
     function actionableTargetFor(target) {
       return target?.closest?.("button, a, label, [role='button'], [tabindex], input, select, textarea") || target;
     }
@@ -1598,12 +1705,18 @@
     });
     window.addEventListener("resize", render);
     document.addEventListener("click", interceptMapStepClick, true);
+    document.addEventListener("click", (event) => {
+      const button = event.target.closest?.("button, a, [role='button']");
+      ensureDemoReservationFields(button);
+    }, true);
     document.addEventListener("click", (event) => window.setTimeout(() => completeCurrentAction(event, "click"), 0));
     document.addEventListener("input", (event) => completeCurrentAction(event, "input"));
     document.addEventListener("change", (event) => completeCurrentAction(event, "change"));
 
-    if (forceTutorial || !window.localStorage.getItem("seatmap:tutorial-seen")) {
+    if (forceTutorial) {
       window.setTimeout(() => open(0), 900);
+    } else if (!skipTutorial && !window.sessionStorage.getItem("seatmap:entry-choice-seen")) {
+      window.setTimeout(ensureEntryChoice, 900);
     }
   }
 

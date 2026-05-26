@@ -361,6 +361,7 @@ function applySiteLanguage(language) {
   const copy = siteCopy[language] || siteCopy.ru;
   document.documentElement.lang = language;
   window.localStorage.setItem("dispace-language", language);
+  window.localStorage.setItem("restaurant-lang", language);
 
   setAllText(".main-nav a", copy.nav);
   setAllText(".mobile-menu a", copy.nav);

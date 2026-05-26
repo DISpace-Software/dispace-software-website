@@ -645,35 +645,14 @@ main,
 
 .seatmap-feature {
   display: grid;
-  grid-template-rows: auto auto auto 1fr;
-  min-height: 420px;
-  padding: 14px;
+  grid-template-rows: auto auto 1fr;
+  min-height: 250px;
+  padding: 22px;
   border: 1px solid rgba(246, 221, 176, 0.14);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.045);
   box-shadow: 0 18px 50px rgba(0, 0, 0, 0.22);
   overflow: hidden;
-}
-
-.feature-shot {
-  display: grid;
-  min-height: 190px;
-  place-items: center;
-  margin-bottom: 18px;
-  border: 1px dashed rgba(239, 194, 119, 0.36);
-  border-radius: 8px;
-  background:
-    linear-gradient(90deg, rgba(246, 221, 176, 0.08) 1px, transparent 1px) 0 0 / 28px 28px,
-    linear-gradient(rgba(246, 221, 176, 0.08) 1px, transparent 1px) 0 0 / 28px 28px,
-    rgba(0, 0, 0, 0.22);
-}
-
-.feature-shot span {
-  color: rgba(255, 245, 223, 0.58);
-  font-size: 0.78rem;
-  font-weight: 900;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
 }
 
 .seatmap-feature > span {
@@ -1737,10 +1716,6 @@ main,
 
   .team-ribbon span {
     min-height: 54px;
-  }
-
-  .feature-shot {
-    min-height: 160px;
   }
 
   .team-photo {
