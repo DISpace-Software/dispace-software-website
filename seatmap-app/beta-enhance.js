@@ -1198,6 +1198,185 @@
     return null;
   }
 
+  function tutorialUiText() {
+    const language = currentLanguage();
+    const dictionary = {
+      bg: {
+        aria: "Обучение SeatMap",
+        hotspot: "Изберете подсветената зона",
+        kicker: "Обучение",
+        pointer: "Изберете тук",
+        prev: "Назад",
+        skip: "Пропусни",
+        next: "Напред",
+        done: "Готово",
+        made: "Готово",
+        fallbackWait: "Изпълнете подсветеното действие",
+        actionDone: "Отлично, действието е изпълнено",
+        selectedSingle: "Масата е избрана. Отлично, можете да продължите.",
+        selectTable: "Кликнете върху подсветената маса",
+        selectedOf: (selected, expected) => `Избрани ${selected} от ${expected}. За тази компания е нужна комбинация от маси.`,
+        contactReady: "Контактните данни са готови. Email и рожден ден могат да останат празни.",
+        contactMissing: (missing) => `Остава да попълните: ${missing.join(" и ")}. Email и рожден ден не са задължителни.`,
+        name: "име",
+        phone: "телефон",
+      },
+      en: {
+        aria: "SeatMap walkthrough",
+        hotspot: "Choose the highlighted area",
+        kicker: "Walkthrough",
+        pointer: "Choose here",
+        prev: "Back",
+        skip: "Skip",
+        next: "Next",
+        done: "Done",
+        made: "Done",
+        fallbackWait: "Complete the highlighted action",
+        actionDone: "Great, action completed",
+        selectedSingle: "Table selected. Great, you can continue.",
+        selectTable: "Click the highlighted table",
+        selectedOf: (selected, expected) => `Selected ${selected} of ${expected}. This party needs a table combination.`,
+        contactReady: "Contact details are ready. Email and birthday can be left empty.",
+        contactMissing: (missing) => `Still needed: ${missing.join(" and ")}. Email and birthday are optional.`,
+        name: "name",
+        phone: "phone",
+      },
+    };
+
+    return dictionary[language] || {
+      aria: "Обучение SeatMap",
+      hotspot: "Выбрать подсвеченную область",
+      kicker: "Обучение",
+      pointer: "Выберите здесь",
+      prev: "Назад",
+      skip: "Пропустить",
+      next: "Далее",
+      done: "Готово",
+      made: "Я сделал",
+      fallbackWait: "Выполните подсвеченное действие",
+      actionDone: "Отлично, действие выполнено",
+      selectedSingle: "Стол выбран. Отлично, можно продолжать.",
+      selectTable: "Кликните по подсвеченному столику",
+      selectedOf: (selected, expected) => `Выбрано ${selected} из ${expected}. Для этой компании нужна комбинация столов.`,
+      contactReady: "Контактные данные готовы. Email и день рождения можно оставить пустыми.",
+      contactMissing: (missing) => `Осталось заполнить: ${missing.join(" и ")}. Email и дата рождения необязательны.`,
+      name: "имя",
+      phone: "телефон",
+    };
+  }
+
+  function localizeTutorialSteps(steps) {
+    const language = currentLanguage();
+    const bg = {
+      "Это панель навигации": "Това е навигационният панел",
+      "Нажмите на маленькую кнопку слева. Я подожду, пока откроется меню навигации.": "Натиснете малкия бутон вляво. Ще изчакам, докато се отвори менюто за навигация.",
+      "Нажмите на кнопку SeatMap слева": "Натиснете бутона SeatMap вляво",
+      "Начинаем с карты бронирования": "Започваме с картата за резервации",
+      "Теперь выберите раздел карты бронирований в открывшемся меню.": "Сега изберете раздела с картата за резервации от отвореното меню.",
+      "Нажмите «Карта бронирований»": "Натиснете „Карта резервации“",
+      "Сначала выберите зону": "Първо изберете зона",
+      "Начните как гость ресторана: выберите зал, террасу или другую доступную зону. От зоны зависит список свободных столов.": "Започнете като гост на ресторанта: изберете зала, тераса или друга налична зона. От зоната зависи списъкът със свободни маси.",
+      "Нажмите на одну из зон ресторана": "Натиснете една от зоните на ресторанта",
+      "Выберите день визита": "Изберете ден на посещение",
+      "Чаще всего гости выбирают «Сегодня» или «Завтра». Можно нажать быстрый вариант или выбрать конкретную дату в поле.": "Най-често гостите избират „Днес“ или „Утре“. Можете да натиснете бърз вариант или да изберете конкретна дата в полето.",
+      "Нажмите «Сегодня» / «Завтра» или измените дату": "Натиснете „Днес“ / „Утре“ или променете датата",
+      "Теперь выберите время": "Сега изберете час",
+      "Время влияет на занятость столов и блокировки. SeatMap сразу пересчитывает доступные варианты.": "Часът влияе върху заетостта на масите и блокировките. SeatMap веднага преизчислява наличните варианти.",
+      "Измените время визита": "Променете часа на посещението",
+      "Укажите количество гостей": "Посочете броя гости",
+      "Если гостей больше, чем вмещает один стол, система должна показать подходящие комбинации столов рядом.": "Ако гостите са повече, отколкото побира една маса, системата показва подходящи комбинации от близки маси.",
+      "Измените количество гостей": "Променете броя гости",
+      "Выберите подходящие столы": "Изберете подходящи маси",
+      "SeatMap подбирает стол или комбинацию столов под количество гостей. Если гостей больше вместимости одного стола, выберите несколько подсвеченных столов рядом.": "SeatMap подбира маса или комбинация от маси според броя гости. Ако гостите са повече от капацитета на една маса, изберете няколко подсветени близки маси.",
+      "Выберите нужное количество подсвеченных столов": "Изберете нужния брой подсветени маси",
+      "Заполните данные гостя": "Попълнете данните на госта",
+      "Теперь заполните контактную форму: имя гостя, телефон, email по желанию и дату рождения, если гость хочет персональные предложения.": "Сега попълнете контактната форма: име на госта, телефон, email по желание и рожден ден, ако гостът иска персонални предложения.",
+      "Введите минимум имя и телефон гостя": "Въведете поне име и телефон на госта",
+      "Подтвердите согласия": "Потвърдете съгласията",
+      "Отметьте согласие на обработку данных. Маркетинговое согласие можно использовать для loyalty и персональных предложений.": "Отбележете съгласие за обработка на данни. Маркетинговото съгласие може да се използва за loyalty и персонални предложения.",
+      "Поставьте нужные галочки согласий": "Отбележете нужните съгласия",
+      "Создайте бронь": "Създайте резервация",
+      "Теперь нажмите кнопку создания брони. Только после этого заявка попадёт в CRM и появится инструкция для администратора.": "Сега натиснете бутона за създаване на резервация. Едва след това заявката влиза в CRM и се показва инструкция за администратора.",
+      "Нажмите кнопку бронирования": "Натиснете бутона за резервация",
+      "Перейдите к обработке брони": "Преминете към обработка на резервацията",
+      "После создания брони система показывает следующий рабочий шаг: перейти в CRM и обработать заявку как администратор ресторана.": "След създаване на резервацията системата показва следващата работна стъпка: преминаване към CRM и обработка като администратор на ресторанта.",
+      "Нажмите «Перейти в CRM-админку»": "Натиснете „Към CRM админка“",
+      "Демо-вход уже подсказан": "Демо входът вече е подсказан",
+      "Нажмите «Заполнить»: email и пароль подставятся автоматически. Карточка обучения теперь не перекрывает поля, чтобы пароль было удобно проверить глазиком.": "Натиснете „Попълни“: email и парола ще се въведат автоматично. Картата за обучение не покрива полетата, за да можете удобно да проверите паролата.",
+      "Нажмите «Заполнить»": "Натиснете „Попълни“",
+      "Войдите в CRM": "Влезте в CRM",
+      "Нажмите кнопку входа. После авторизации откроется рабочая CRM-панель ресторана.": "Натиснете бутона за вход. След авторизация ще се отвори работният CRM панел на ресторанта.",
+      "Нажмите кнопку входа": "Натиснете бутона за вход",
+      "Главный пульт ресторана": "Главен пулт на ресторанта",
+      "Верхние метрики показывают загрузку: все брони, ожидающие, подтверждённые и blacklist. Это быстрый статус смены.": "Горните метрики показват натоварването: всички резервации, чакащи, потвърдени и blacklist. Това е бързият статус на смяната.",
+      "Посмотрите на метрики CRM": "Разгледайте CRM метриките",
+      "Разделы CRM": "Раздели в CRM",
+      "Вкладки переключают рабочие зоны: брони, ручное создание, блокировки, карту ресторана, гостей, админов и аудит.": "Табовете превключват работните зони: резервации, ръчно създаване, блокировки, карта на ресторанта, гости, админи и одит.",
+      "Откройте любую вкладку или нажмите «Я сделал»": "Отворете някой таб или натиснете „Готово“",
+      "Работа с заявкой": "Работа със заявка",
+      "В списке бронирований администратор подтверждает бронь, отменяет её или отмечает no-show. Это основная операционная очередь.": "В списъка с резервации администраторът потвърждава, отменя или отбелязва no-show. Това е основната оперативна опашка.",
+      "Попробуйте действие с бронью или нажмите «Я сделал»": "Пробвайте действие с резервация или натиснете „Готово“",
+      "Перенос и комбинации столов": "Преместване и комбинации от маси",
+      "В CRM можно менять столы для брони: выбрать другой стол, сохранить комбинацию и освободить место при no-show.": "В CRM можете да сменяте масите за резервация: да изберете друга маса, да запазите комбинация и да освободите място при no-show.",
+      "Посмотрите блок смены столов": "Разгледайте блока за смяна на маси",
+      "Карта ресторана в админке": "Карта на ресторанта в админката",
+      "В разделе карты администратор может передвигать столы, добавлять новые, менять вместимость и сохранять layout для сайта.": "В раздела карта администраторът може да мести маси, да добавя нови, да променя капацитет и да запазва layout за сайта.",
+      "Откройте карту или нажмите «Я сделал»": "Отворете картата или натиснете „Готово“",
+      "Меню связано с операционной системой": "Менюто е свързано с операционната система",
+      "В конце откройте цифровое меню. Оно связано с заказами и операционной системой ресторана.": "Накрая отворете дигиталното меню. То е свързано с поръчките и операционната система на ресторанта.",
+      "Нажмите «Цифровое меню»": "Натиснете „Дигитално меню“",
+      "CMS меню": "CMS меню",
+      "Меню управляется как часть Restaurant OS: блюда, категории, цены и активность синхронизируются с гостевым меню и CRM.": "Менюто се управлява като част от Restaurant OS: ястия, категории, цени и активност се синхронизират с гост менюто и CRM.",
+      "Посмотрите структуру меню": "Разгледайте структурата на менюто",
+    };
+
+    const en = {
+      "Это панель навигации": "This is the navigation panel",
+      "Нажмите на маленькую кнопку слева. Я подожду, пока откроется меню навигации.": "Click the small button on the left. I will wait until the navigation menu opens.",
+      "Нажмите на кнопку SeatMap слева": "Click the SeatMap button on the left",
+      "Начинаем с карты бронирования": "Start with the reservation map",
+      "Теперь выберите раздел карты бронирований в открывшемся меню.": "Now choose the reservation map section in the opened menu.",
+      "Нажмите «Карта бронирований»": "Click “Reservation map”",
+      "Сначала выберите зону": "First choose an area",
+      "Начните как гость ресторана: выберите зал, террасу или другую доступную зону. От зоны зависит список свободных столов.": "Start as a restaurant guest: choose the hall, terrace or another available area. The available tables depend on this area.",
+      "Нажмите на одну из зон ресторана": "Click one restaurant area",
+      "Выберите день визита": "Choose the visit day",
+      "Чаще всего гости выбирают «Сегодня» или «Завтра». Можно нажать быстрый вариант или выбрать конкретную дату в поле.": "Guests usually choose “Today” or “Tomorrow”. You can use a quick option or pick a specific date.",
+      "Нажмите «Сегодня» / «Завтра» или измените дату": "Click “Today” / “Tomorrow” or change the date",
+      "Теперь выберите время": "Now choose the time",
+      "Время влияет на занятость столов и блокировки. SeatMap сразу пересчитывает доступные варианты.": "Time affects table occupancy and blocks. SeatMap recalculates available options immediately.",
+      "Измените время визита": "Change the visit time",
+      "Укажите количество гостей": "Set the number of guests",
+      "Если гостей больше, чем вмещает один стол, система должна показать подходящие комбинации столов рядом.": "If the party is larger than one table can fit, the system shows suitable table combinations nearby.",
+      "Измените количество гостей": "Change the guest count",
+      "Выберите подходящие столы": "Choose suitable tables",
+      "SeatMap подбирает стол или комбинацию столов под количество гостей. Если гостей больше вместимости одного стола, выберите несколько подсвеченных столов рядом.": "SeatMap recommends a table or combination for the guest count. If one table is not enough, choose several highlighted nearby tables.",
+      "Выберите нужное количество подсвеченных столов": "Choose the needed number of highlighted tables",
+      "Заполните данные гостя": "Fill in guest details",
+      "Теперь заполните контактную форму: имя гостя, телефон, email по желанию и дату рождения, если гость хочет персональные предложения.": "Now fill in the contact form: guest name, phone, optional email and birthday for personalized offers.",
+      "Введите минимум имя и телефон гостя": "Enter at least guest name and phone",
+      "Подтвердите согласия": "Confirm consents",
+      "Отметьте согласие на обработку данных. Маркетинговое согласие можно использовать для loyalty и персональных предложений.": "Check consent for data processing. Marketing consent can be used for loyalty and personalized offers.",
+      "Поставьте нужные галочки согласий": "Check the required consent boxes",
+      "Создайте бронь": "Create the reservation",
+      "Теперь нажмите кнопку создания брони. Только после этого заявка попадёт в CRM и появится инструкция для администратора.": "Now click the reservation button. Only after that will the request enter CRM and show the admin instructions.",
+      "Нажмите кнопку бронирования": "Click the reservation button",
+      "Перейдите к обработке брони": "Move to reservation handling",
+      "После создания брони система показывает следующий рабочий шаг: перейти в CRM и обработать заявку как администратор ресторана.": "After reservation creation the system shows the next workflow step: open CRM and handle it as the restaurant admin.",
+      "Нажмите «Перейти в CRM-админку»": "Click “Go to CRM admin”",
+    };
+
+    const map = language === "bg" ? bg : language === "en" ? en : null;
+    if (!map) return steps;
+
+    return steps.map((step) => ({
+      ...step,
+      title: map[step.title] || step.title,
+      text: map[step.text] || step.text,
+      waiting: map[step.waiting] || step.waiting,
+    }));
+  }
+
   function getTutorialSteps() {
     const openDock = () => {
       const bar = document.querySelector(".seatmap-command-bar");
@@ -1206,7 +1385,7 @@
       }
     };
 
-    return [
+    const steps = [
       {
         route: "home",
         selector: ".seatmap-dock-toggle",
@@ -1422,29 +1601,32 @@
         cardSize: "wide",
       },
     ];
+
+    return localizeTutorialSteps(steps);
   }
 
   function ensureTutorial() {
     if (document.querySelector(".seatmap-tutorial")) return;
 
+    const ui = tutorialUiText();
     const tutorial = document.createElement("div");
     tutorial.className = "seatmap-tutorial";
     tutorial.setAttribute("aria-hidden", "true");
     tutorial.innerHTML = `
       <div class="seatmap-tutorial-scrim"></div>
       <div class="seatmap-tutorial-spotlight"></div>
-      <button class="seatmap-tutorial-hotspot" type="button" aria-label="Выбрать подсвеченную область"></button>
-      <div class="seatmap-tutorial-pointer">Выберите здесь</div>
-      <div class="seatmap-tutorial-card" role="dialog" aria-live="polite" aria-label="Обучение SeatMap">
-        <p class="seatmap-tutorial-kicker">Обучение</p>
+      <button class="seatmap-tutorial-hotspot" type="button" aria-label="${ui.hotspot}"></button>
+      <div class="seatmap-tutorial-pointer">${ui.pointer}</div>
+      <div class="seatmap-tutorial-card" role="dialog" aria-live="polite" aria-label="${ui.aria}">
+        <p class="seatmap-tutorial-kicker">${ui.kicker}</p>
         <h2></h2>
         <p class="seatmap-tutorial-copy"></p>
         <div class="seatmap-tutorial-wait"></div>
         <div class="seatmap-tutorial-progress"></div>
         <div class="seatmap-tutorial-actions">
-          <button class="seatmap-tutorial-ghost" type="button" data-tour-prev>Назад</button>
-          <button class="seatmap-tutorial-skip" type="button" data-tour-skip>Пропустить</button>
-          <button class="seatmap-tutorial-next" type="button" data-tour-next>Далее</button>
+          <button class="seatmap-tutorial-ghost" type="button" data-tour-prev>${ui.prev}</button>
+          <button class="seatmap-tutorial-skip" type="button" data-tour-skip>${ui.skip}</button>
+          <button class="seatmap-tutorial-next" type="button" data-tour-next>${ui.next}</button>
         </div>
       </div>
       <button class="seatmap-tutorial-launch" type="button">?</button>
@@ -1588,12 +1770,12 @@
           activeTarget = target;
           title.textContent = step.title;
           copy.textContent = step.text;
-          wait.textContent = step.waiting || "Выполните подсвеченное действие";
+          wait.textContent = step.waiting || ui.fallbackWait;
           if (step.action === "table-selection") updateTableSelectionWait();
           if (step.action === "contact-form") updateContactFormWait();
           progress.textContent = `${index + 1} / ${steps.length}`;
           prev.disabled = index === 0;
-          next.textContent = index === steps.length - 1 ? "Готово" : "Я сделал";
+          next.textContent = index === steps.length - 1 ? ui.done : ui.made;
           positionAround(target, step.side, step.spotlightPadding || 10, step);
         }, 260);
       }, 180);
@@ -1796,20 +1978,20 @@
       const expected = expectedTableCount();
       const selected = selectedTutorialTables.size;
       wait.textContent = expected > 1
-        ? `Выбрано ${selected} из ${expected}. Для этой компании нужна комбинация столов.`
+        ? ui.selectedOf(selected, expected)
         : selected > 0
-          ? "Стол выбран. Отлично, можно продолжать."
-          : "Кликните по подсвеченному столику";
+          ? ui.selectedSingle
+          : ui.selectTable;
     }
 
     function updateContactFormWait() {
       const state = getReservationContactState();
       const missing = [];
-      if (!state.filled.name) missing.push("имя");
-      if (!state.filled.phone) missing.push("телефон");
+      if (!state.filled.name) missing.push(ui.name);
+      if (!state.filled.phone) missing.push(ui.phone);
       wait.textContent = missing.length
-        ? `Осталось заполнить: ${missing.join(" и ")}. Email и дата рождения необязательны.`
-        : "Контактные данные готовы. Email и день рождения можно оставить пустыми.";
+        ? ui.contactMissing(missing)
+        : ui.contactReady;
     }
 
     function completeCurrentAction(event, eventName) {
@@ -1817,7 +1999,7 @@
       clickListenerPaused = true;
       tutorial.classList.remove("is-waiting");
       tutorial.classList.add("is-action-done");
-      wait.textContent = "Отлично, действие выполнено";
+      wait.textContent = ui.actionDone;
       window.setTimeout(() => {
         clickListenerPaused = false;
         advance();
