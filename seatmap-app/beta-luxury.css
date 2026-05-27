@@ -713,6 +713,29 @@ body::before {
   border-left: 10px solid rgba(231, 189, 120, 0.3);
 }
 
+.seatmap-tutorial-card[data-side="top"]::before,
+.seatmap-tutorial-card[data-side="bottom"]::before {
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.seatmap-tutorial-card[data-side="top"]::before {
+  top: auto;
+  bottom: -10px;
+  border-top: 10px solid rgba(231, 189, 120, 0.3);
+  border-right: 10px solid transparent;
+  border-left: 10px solid transparent;
+  border-bottom: 0;
+}
+
+.seatmap-tutorial-card[data-side="bottom"]::before {
+  top: -10px;
+  border-right: 10px solid transparent;
+  border-bottom: 10px solid rgba(231, 189, 120, 0.3);
+  border-left: 10px solid transparent;
+  border-top: 0;
+}
+
 .seatmap-tutorial-card h2 {
   margin: 0;
   color: var(--sm-cream);
@@ -769,6 +792,25 @@ body::before {
   font-size: 0.74rem;
   font-weight: 900;
   letter-spacing: 0.16em;
+}
+
+.seatmap-tutorial-meter {
+  position: relative;
+  overflow: hidden;
+  height: 5px;
+  margin-top: 14px;
+  border-radius: 999px;
+  background: rgba(255, 246, 231, 0.08);
+}
+
+.seatmap-tutorial-meter span {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #ffe7b4, #c9954d);
+  box-shadow: 0 0 20px rgba(231, 189, 120, 0.42);
+  transition: width 0.28s ease;
 }
 
 .seatmap-tutorial-actions {
@@ -921,6 +963,10 @@ body::before {
     border-radius: 8px;
   }
 
+  .seatmap-tutorial-card.is-compact {
+    max-height: min(30vh, 230px);
+  }
+
   .seatmap-tutorial-card.is-wide {
     max-height: min(56vh, 420px);
   }
@@ -955,6 +1001,11 @@ body::before {
   .seatmap-tutorial-progress {
     margin-top: 8px;
     font-size: 0.62rem;
+  }
+
+  .seatmap-tutorial-meter {
+    height: 4px;
+    margin-top: 8px;
   }
 
   .seatmap-tutorial-kicker {

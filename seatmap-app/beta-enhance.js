@@ -1622,6 +1622,7 @@
         <h2></h2>
         <p class="seatmap-tutorial-copy"></p>
         <div class="seatmap-tutorial-wait"></div>
+        <div class="seatmap-tutorial-meter"><span></span></div>
         <div class="seatmap-tutorial-progress"></div>
         <div class="seatmap-tutorial-actions">
           <button class="seatmap-tutorial-ghost" type="button" data-tour-prev>${ui.prev}</button>
@@ -1649,6 +1650,7 @@
     const title = tutorial.querySelector("h2");
     const copy = tutorial.querySelector(".seatmap-tutorial-copy");
     const wait = tutorial.querySelector(".seatmap-tutorial-wait");
+    const meter = tutorial.querySelector(".seatmap-tutorial-meter span");
     const progress = tutorial.querySelector(".seatmap-tutorial-progress");
     const prev = tutorial.querySelector("[data-tour-prev]");
     const next = tutorial.querySelector("[data-tour-next]");
@@ -1681,10 +1683,47 @@
       return {
         left,
         top,
+        right,
+        bottom,
         width: Math.max(right - left, 76),
         height: Math.max(bottom - top, 58),
         source: rect,
       };
+    }
+
+    function clamp(value, min, max) {
+      return Math.min(max, Math.max(min, value));
+    }
+
+    function rectsOverlap(a, b) {
+      return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+    }
+
+    function scoreCardPosition(candidate, spotlightRect, preferredSide) {
+      const viewportPadding = 14;
+      const viewport = {
+        left: viewportPadding,
+        top: viewportPadding,
+        right: window.innerWidth - viewportPadding,
+        bottom: window.innerHeight - viewportPadding,
+      };
+      const candidateRect = {
+        left: candidate.left,
+        top: candidate.top,
+        right: candidate.left + candidate.width,
+        bottom: candidate.top + candidate.height,
+      };
+      const overflow =
+        Math.max(0, viewport.left - candidateRect.left) +
+        Math.max(0, candidateRect.right - viewport.right) +
+        Math.max(0, viewport.top - candidateRect.top) +
+        Math.max(0, candidateRect.bottom - viewport.bottom);
+      const overlapPenalty = rectsOverlap(candidateRect, spotlightRect) ? 2000 : 0;
+      const preferencePenalty = candidate.side === preferredSide ? 0 : candidate.side === "bottom" || candidate.side === "top" ? 35 : 65;
+      const distance = Math.abs(candidateRect.left + candidate.width / 2 - (spotlightRect.left + spotlightRect.width / 2)) +
+        Math.abs(candidateRect.top + candidate.height / 2 - (spotlightRect.top + spotlightRect.height / 2));
+
+      return overflow * 120 + overlapPenalty + preferencePenalty + distance / 30;
     }
 
     function positionAround(target, side, padding = 10, options = {}) {
@@ -1704,31 +1743,71 @@
       const isMobile = window.matchMedia("(max-width: 700px)").matches;
       const isWide = options.cardSize === "wide";
       const cardWidth = Math.min(isMobile ? 340 : isWide ? 520 : 360, window.innerWidth - 28);
-      const preferRight = side !== "left";
-      let left = preferRight ? rect.right + 24 : rect.left - cardWidth - 24;
-      if (left < 14) left = 14;
-      if (left + cardWidth > window.innerWidth - 14) left = window.innerWidth - cardWidth - 14;
-
-      let top = rect.top + rect.height / 2 - 130;
-      if (top < 14) top = 14;
-      if (top > window.innerHeight - 310) top = Math.max(14, window.innerHeight - 310);
-
-      card.style.width = `${cardWidth}px`;
+      card.classList.toggle("is-wide", isWide);
+      card.classList.toggle("is-compact", Boolean(options.compactCard || options.action !== "next"));
       if (isMobile) {
+        card.classList.add("is-mobile-sheet");
         const targetIsLow = rect.top > window.innerHeight * 0.48;
         card.style.left = "12px";
         card.style.right = "12px";
         card.style.top = targetIsLow ? "12px" : "auto";
         card.style.bottom = targetIsLow ? "auto" : "12px";
         card.style.width = "auto";
+        card.dataset.side = targetIsLow ? "top" : "bottom";
       } else {
+        card.classList.remove("is-mobile-sheet");
+        card.style.width = `${cardWidth}px`;
+        card.style.left = "-9999px";
         card.style.right = "auto";
+        card.style.top = "14px";
         card.style.bottom = "auto";
-        card.style.left = `${left}px`;
-        card.style.top = `${top}px`;
+        const measuredHeight = Math.min(card.scrollHeight || 280, window.innerHeight - 28);
+        const gap = 24;
+        const centerTop = spotlightRect.top + spotlightRect.height / 2 - measuredHeight / 2;
+        const centerLeft = spotlightRect.left + spotlightRect.width / 2 - cardWidth / 2;
+        const candidates = [
+          {
+            side: "right",
+            width: cardWidth,
+            height: measuredHeight,
+            left: spotlightRect.left + spotlightRect.width + gap,
+            top: centerTop,
+          },
+          {
+            side: "left",
+            width: cardWidth,
+            height: measuredHeight,
+            left: spotlightRect.left - cardWidth - gap,
+            top: centerTop,
+          },
+          {
+            side: "bottom",
+            width: cardWidth,
+            height: measuredHeight,
+            left: centerLeft,
+            top: spotlightRect.top + spotlightRect.height + gap,
+          },
+          {
+            side: "top",
+            width: cardWidth,
+            height: measuredHeight,
+            left: centerLeft,
+            top: spotlightRect.top - measuredHeight - gap,
+          },
+        ].map((candidate) => ({
+          ...candidate,
+          left: clamp(candidate.left, 14, window.innerWidth - candidate.width - 14),
+          top: clamp(candidate.top, 14, window.innerHeight - candidate.height - 14),
+        }));
+        const preferredSide = side === "left" ? "left" : "right";
+        const best = candidates.sort((a, b) =>
+          scoreCardPosition(a, spotlightRect, preferredSide) - scoreCardPosition(b, spotlightRect, preferredSide)
+        )[0];
+
+        card.style.left = `${best.left}px`;
+        card.style.top = `${best.top}px`;
+        card.dataset.side = best.side;
       }
-      card.classList.toggle("is-wide", isWide);
-      card.dataset.side = preferRight ? "right" : "left";
     }
 
     function targetForStep(step) {
@@ -1773,6 +1852,7 @@
           wait.textContent = step.waiting || ui.fallbackWait;
           if (step.action === "table-selection") updateTableSelectionWait();
           if (step.action === "contact-form") updateContactFormWait();
+          meter.style.width = `${((index + 1) / steps.length) * 100}%`;
           progress.textContent = `${index + 1} / ${steps.length}`;
           prev.disabled = index === 0;
           next.textContent = index === steps.length - 1 ? ui.done : ui.made;
