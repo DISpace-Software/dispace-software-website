@@ -6,7 +6,7 @@
     admin: "/admin",
   };
   const initialParams = new URLSearchParams(window.location.search);
-  const forceTutorial = initialParams.get("tour") === "1";
+  const forceTutorial = false;
   const skipTutorial = initialParams.get("tour") === "0";
 
   const languages = {
@@ -2113,22 +2113,22 @@
         ru: {
           kicker: "SeatMap beta",
           title: "Как хотите попробовать систему?",
-          text: "Можно пройти короткое интерактивное обучение по бронированию, CRM и меню или сразу свободно открыть продукт.",
-          guide: "Пройти обучение",
+          text: "Свободная beta доступна сейчас. Интерактивное обучение по бронированию, CRM и меню находится в разработке.",
+          guide: "Обучение в разработке",
           free: "Без обучения",
         },
         en: {
           kicker: "SeatMap beta",
           title: "How would you like to try the system?",
-          text: "Take a short guided walkthrough for reservations, CRM and menu, or open the product freely.",
-          guide: "Start walkthrough",
+          text: "The free beta is available now. The guided walkthrough for reservations, CRM, and menu is currently in development.",
+          guide: "Walkthrough in development",
           free: "Explore freely",
         },
         bg: {
           kicker: "SeatMap beta",
           title: "Как искате да пробвате системата?",
-          text: "Минете кратко интерактивно обучение за резервации, CRM и меню или отворете продукта свободно.",
-          guide: "С обучение",
+          text: "Свободната beta е достъпна сега. Интерактивното обучение за резервации, CRM и меню е в разработка.",
+          guide: "Обучението е в разработка",
           free: "Без обучение",
         },
       }[language] || {};
@@ -2141,7 +2141,7 @@
           <h1>${copy.title}</h1>
           <span>${copy.text}</span>
           <div>
-            <button class="seatmap-entry-guide" type="button">${copy.guide}</button>
+            <button class="seatmap-entry-guide" type="button" disabled aria-disabled="true">${copy.guide}</button>
             <button class="seatmap-entry-free" type="button">${copy.free}</button>
           </div>
         </div>
@@ -2151,13 +2151,6 @@
         modal.classList.remove("is-open");
         window.setTimeout(() => modal.remove(), 220);
       };
-
-      modal.querySelector(".seatmap-entry-guide").addEventListener("click", () => {
-        window.sessionStorage.setItem("seatmap:entry-choice-seen", "true");
-        window.localStorage.removeItem("seatmap:tutorial-seen");
-        closeChoice();
-        window.setTimeout(() => open(0), 260);
-      });
 
       modal.querySelector(".seatmap-entry-free").addEventListener("click", () => {
         window.sessionStorage.setItem("seatmap:entry-choice-seen", "true");
