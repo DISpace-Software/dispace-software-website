@@ -36,7 +36,9 @@ const siteCopy = {
     contactTitle: "Расскажите, что нужно построить. Мы превратим идею в продукт.",
     contactText: "Подойдет короткое сообщение: цель, сроки, текущая боль и что должно измениться после запуска.",
     privacyTitle: "Политика конфиденциальности",
+    privacyButton: "Политика конфиденциальности",
     privacyText: "Мы используем персональные данные только для связи по проектам, обработки входящих запросов, улучшения сайта и выполнения законных обязательств. Данные не продаются третьим лицам.",
+    privacyClose: "Закрыть политику конфиденциальности",
     privacyLabels: ["Data Controller:", "Registered Address:", "VAT/UIC:", "Contact Email:", "Phone:", "Representative:"],
     cookieTitle: "Cookie-файлы",
     cookieText: "Мы используем необходимые cookie для работы сайта и можем сохранять выбранный язык. Аналитические cookie включаются только после согласия.",
@@ -47,7 +49,8 @@ const siteCopy = {
     formProject: "Проект",
     formProjectPlaceholder: "Опишите задачу",
     submit: "Отправить запрос",
-    submitted: "Запрос готов",
+    submitted: "Открываем почту",
+    emailSubject: "Новая заявка с сайта DISpace Software",
     footer: "Цифровые продукты с инженерной глубиной",
     heroEyebrow: "Индивидуальная разработка, AI, веб-платформы",
     introKicker: "Инженерия со вкусом",
@@ -106,7 +109,9 @@ const siteCopy = {
     contactTitle: "Tell us what needs to be built. We will turn the idea into a product.",
     contactText: "A short message is enough: goal, timing, current pain, and what should change after launch.",
     privacyTitle: "Privacy Policy",
+    privacyButton: "Privacy Policy",
     privacyText: "We use personal data only to respond to project inquiries, process incoming requests, improve the website, and meet legal obligations. We do not sell personal data to third parties.",
+    privacyClose: "Close privacy policy",
     privacyLabels: ["Data Controller:", "Registered Address:", "VAT/UIC:", "Contact Email:", "Phone:", "Representative:"],
     cookieTitle: "Cookies",
     cookieText: "We use essential cookies for site functionality and may store your language preference. Analytics cookies are enabled only after consent.",
@@ -117,7 +122,8 @@ const siteCopy = {
     formProject: "Project",
     formProjectPlaceholder: "Describe the task",
     submit: "Send request",
-    submitted: "Request ready",
+    submitted: "Opening email",
+    emailSubject: "New request from DISpace Software website",
     footer: "Digital products with engineering depth",
     heroEyebrow: "Custom software, AI, web platforms",
     introKicker: "Engineering with taste",
@@ -176,7 +182,9 @@ const siteCopy = {
     contactTitle: "Разкажете какво трябва да построим. Ще превърнем идеята в продукт.",
     contactText: "Кратко съобщение е достатъчно: цел, срокове, текущ проблем и какво трябва да се промени след старта.",
     privacyTitle: "Политика за поверителност",
+    privacyButton: "Политика за поверителност",
     privacyText: "Използваме лични данни само за връзка по проекти, обработка на входящи запитвания, подобряване на сайта и изпълнение на законови задължения. Не продаваме лични данни на трети страни.",
+    privacyClose: "Затвори политиката за поверителност",
     privacyLabels: ["Data Controller:", "Registered Address:", "VAT/UIC:", "Contact Email:", "Phone:", "Representative:"],
     cookieTitle: "Бисквитки",
     cookieText: "Използваме необходими бисквитки за работата на сайта и може да запазим избрания език. Аналитични бисквитки се включват само след съгласие.",
@@ -187,7 +195,8 @@ const siteCopy = {
     formProject: "Проект",
     formProjectPlaceholder: "Опишете задачата",
     submit: "Изпрати заявка",
-    submitted: "Заявката е готова",
+    submitted: "Отваряме пощата",
+    emailSubject: "Ново запитване от сайта на DISpace Software",
     footer: "Дигитални продукти с инженерна дълбочина",
     heroEyebrow: "Custom software, AI, web platforms",
     introKicker: "Инженерство с вкус",
@@ -438,9 +447,12 @@ function applySiteLanguage(language) {
   setText(".contact-form label:nth-child(3) span", copy.formProject);
   setText(".contact-form button", copy.submit);
   setText(".site-footer > div > span:nth-child(2)", copy.footer);
+  setText(".footer-privacy-button", copy.privacyButton);
   setText("#privacy-title", copy.privacyTitle);
-  setText(".footer-privacy > p", copy.privacyText);
-  setAllText(".footer-privacy dt", copy.privacyLabels || []);
+  setText(".privacy-dialog > p", copy.privacyText);
+  setAllText(".privacy-dialog dt", copy.privacyLabels || []);
+  const privacyClose = document.querySelector(".privacy-close");
+  if (privacyClose) privacyClose.setAttribute("aria-label", copy.privacyClose);
   setText(".cookie-consent strong", copy.cookieTitle);
   setText(".cookie-consent p", copy.cookieText);
   setText(".cookie-accept", copy.cookieAccept);
@@ -481,19 +493,62 @@ function setupCookieConsent() {
   banner.querySelector(".cookie-decline")?.addEventListener("click", () => saveConsent("essential"));
 }
 
+function setupPrivacyModal() {
+  const modal = document.querySelector(".privacy-modal");
+  const openButton = document.querySelector(".footer-privacy-button");
+  const closeButton = document.querySelector(".privacy-close");
+  if (!modal || !openButton || !closeButton) return;
+
+  const closeModal = () => {
+    modal.hidden = true;
+    document.body.classList.remove("privacy-open");
+    openButton.focus();
+  };
+
+  openButton.addEventListener("click", () => {
+    modal.hidden = false;
+    document.body.classList.add("privacy-open");
+    closeButton.focus();
+  });
+
+  closeButton.addEventListener("click", closeModal);
+  modal.addEventListener("click", (event) => {
+    if (event.target === modal) closeModal();
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !modal.hidden) closeModal();
+  });
+}
+
 document.querySelector(".contact-form").addEventListener("submit", (event) => {
   event.preventDefault();
-  const button = event.currentTarget.querySelector("button");
+  const form = event.currentTarget;
+  const button = form.querySelector("button");
   const originalText = button.textContent;
   const language = window.localStorage.getItem("dispace-language") || "ru";
-  button.textContent = (siteCopy[language] || siteCopy.ru).submitted;
+  const copy = siteCopy[language] || siteCopy.ru;
+  const formData = new FormData(form);
+  const name = String(formData.get("name") || "").trim();
+  const email = String(formData.get("email") || "").trim();
+  const message = String(formData.get("message") || "").trim();
+  const body = [
+    `Name: ${name || "-"}`,
+    `Email: ${email || "-"}`,
+    "",
+    "Project:",
+    message || "-",
+  ].join("\n");
+  const mailtoUrl = `mailto:dispacesoftware@gmail.com?subject=${encodeURIComponent(copy.emailSubject)}&body=${encodeURIComponent(body)}`;
+
+  button.textContent = copy.submitted;
   button.disabled = true;
+  window.location.href = mailtoUrl;
 
   window.setTimeout(() => {
     button.textContent = originalText;
     button.disabled = false;
-    event.currentTarget.reset();
-  }, 1800);
+  }, 1200);
 });
 
 window.addEventListener("resize", resize);
@@ -506,6 +561,7 @@ tiltCards();
 setupMobileMenu();
 setupSiteLanguage();
 setupCookieConsent();
+setupPrivacyModal();
 updateMacbookOpen();
 movePointer({ clientX: pointer.x, clientY: pointer.y });
 draw();

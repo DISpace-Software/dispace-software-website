@@ -523,8 +523,8 @@
             Подойдет короткое сообщение: цель, сроки, текущая боль и что должно измениться после запуска.
           </p>
           <div class="contact-methods" aria-label="Контакты DISpace Software">
-            <a href="tel:+359879323232">+359 879 323 232</a>
-            <a href="mailto:dispacesoftware@gmail.com">dispacesoftware@gmail.com</a>
+            <a class="contact-phone" href="tel:+359879323232" aria-label="Позвонить в DISpace Software">+359 879 323 232</a>
+            <a class="contact-email" href="mailto:dispacesoftware@gmail.com" aria-label="Написать в DISpace Software">dispacesoftware@gmail.com</a>
           </div>
         </div>
         <form class="contact-form reveal">
@@ -550,7 +550,14 @@
         <span>Dispace Software</span>
         <span>Digital products with engineering depth</span>
       </div>
-      <section class="footer-privacy" aria-labelledby="privacy-title">
+      <button class="footer-privacy-button" type="button" aria-haspopup="dialog" aria-controls="privacy-modal">
+        Политика конфиденциальности
+      </button>
+    </footer>
+
+    <div class="privacy-modal" id="privacy-modal" role="dialog" aria-modal="true" aria-labelledby="privacy-title" hidden>
+      <div class="privacy-dialog">
+        <button class="privacy-close" type="button" aria-label="Закрыть политику конфиденциальности">×</button>
         <h2 id="privacy-title">Политика конфиденциальности</h2>
         <p>
           Мы используем персональные данные только для связи по проектам, обработки входящих запросов,
@@ -564,8 +571,8 @@
           <div><dt>Phone:</dt><dd><a href="tel:+359884588888">+359 884 588 888</a></dd></div>
           <div><dt>Representative:</dt><dd>Valentin Dmitrievich Kara</dd></div>
         </dl>
-      </section>
-    </footer>
+      </div>
+    </div>
 
     <div class="cookie-consent" role="dialog" aria-live="polite" aria-label="Cookie notice" hidden>
       <div>
