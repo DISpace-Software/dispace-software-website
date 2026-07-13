@@ -2,63 +2,124 @@
   const originalFetch = window.fetch.bind(window);
   const apiHostPattern = /^(?:https?:\/\/(?:localhost|127\.0\.0\.1|\[::1\]):5183)?\/api/i;
 
-  const state = {
-    nextReservationId: 18,
-    reservations: [
-      {
-        id: 17,
-        name: "Ivan",
-        email: "home2u.s.sert@gmail.com",
-        phone: "0892062096",
-        date: "2026-05-22",
-        time: "15:00",
-        guests: 2,
-        tableId: 49,
-        tableIds: [49],
-        areaId: "hall",
-        areaName: "Hall / Non-smoking",
-        status: "Pending",
-        notes: "",
-        internalNote: "",
-        isRegular: true,
-        isBlacklisted: true,
-        marketingConsent: true,
-        privacyConsent: true,
-        createdByAdmin: false,
-        createdAtUtc: new Date().toISOString(),
-      },
-    ],
-    orders: [],
-    blacklist: [
-      {
-        id: 1,
-        name: "Ivan",
-        phone: "0892062096",
-        email: "home2u.s.sert@gmail.com",
-        reason: "Demo blacklist record",
-        createdAtUtc: new Date().toISOString(),
-      },
-    ],
-    admins: [
-      {
-        id: 1,
-        name: "Demo Admin",
-        email: "admin@seatmap.local",
-        role: "Owner",
-        isActive: true,
-      },
-    ],
-    audit: [
-      {
-        id: 1,
-        action: "Demo started",
-        entity: "SeatMap",
-        entityId: "beta",
-        adminName: "System",
-        createdAtUtc: new Date().toISOString(),
-      },
-    ],
-  };
+  const storageKey = "seatmap-demo-state-v3";
+  const demoAdminUser = { id: 1, name: "Demo Admin", email: "admin@seatmap.local", role: "Owner" };
+
+  function createInitialState() {
+    return {
+      nextReservationId: 1,
+      reservations: [],
+      orders: [],
+      blacklist: [],
+      admins: [
+        {
+          ...demoAdminUser,
+          isActive: true,
+        },
+      ],
+      audit: [
+        {
+          id: 1,
+          action: "Demo started",
+          entity: "SeatMap",
+          entityId: "beta",
+          adminName: "System",
+          createdAtUtc: new Date().toISOString(),
+        },
+      ],
+    };
+  }
+
+  function normalizeState(savedState) {
+    const base = createInitialState();
+    const merged = {
+      ...base,
+      ...(savedState && typeof savedState === "object" ? savedState : {}),
+    };
+    merged.reservations = Array.isArray(merged.reservations) ? merged.reservations : [];
+    merged.orders = Array.isArray(merged.orders) ? merged.orders : [];
+    merged.blacklist = Array.isArray(merged.blacklist) ? merged.blacklist : [];
+    merged.admins = Array.isArray(merged.admins) && merged.admins.length ? merged.admins : base.admins;
+    merged.audit = Array.isArray(merged.audit) && merged.audit.length ? merged.audit : base.audit;
+
+    const maxReservationId = merged.reservations.reduce((max, item) => Math.max(max, Number(item.id) || 0), 0);
+    merged.nextReservationId = Math.max(Number(merged.nextReservationId) || 1, maxReservationId + 1);
+    return merged;
+  }
+
+  function loadState() {
+    try {
+      return normalizeState(JSON.parse(window.localStorage.getItem(storageKey) || "null"));
+    } catch {
+      return createInitialState();
+    }
+  }
+
+  const state = loadState();
+
+  function persistState() {
+    try {
+      window.localStorage.setItem(
+        storageKey,
+        JSON.stringify({
+          ...state,
+          savedAtUtc: new Date().toISOString(),
+        })
+      );
+    } catch {
+      // The demo still works for the current tab if browser storage is unavailable.
+    }
+  }
+
+  function ensureDemoAdminSession() {
+    try {
+      window.sessionStorage.setItem("admin-token", "seatmap-demo-token");
+      window.sessionStorage.setItem("admin-user", JSON.stringify(demoAdminUser));
+    } catch {
+      // Ignore private-mode storage failures; the login screen can still be used.
+    }
+  }
+
+  function openAdminAfterReservation() {
+    ensureDemoAdminSession();
+    window.setTimeout(() => {
+      const adminUrl = new URL("./admin/", document.baseURI || window.location.href).href;
+      if (window.location.href !== adminUrl) window.location.assign(adminUrl);
+    }, 350);
+  }
+
+  function normalizeReservation(body) {
+    const guestName = body.guestName || body.name || body.fullName || body.customerName || "";
+    const guestCount = Number(body.guestCount || body.guests || body.partySize || 0);
+    const reservedDate = body.reservedDate || body.date || "";
+    const reservedTime = body.reservedTime || body.time || "";
+    const tableIds = Array.isArray(body.tableIds) ? body.tableIds : body.tableId ? [body.tableId] : [];
+
+    return {
+      ...body,
+      id: state.nextReservationId++,
+      guestName,
+      name: guestName,
+      phone: body.phone || body.guestPhone || "",
+      email: body.email || body.guestEmail || "",
+      guestCount,
+      guests: guestCount,
+      reservedDate,
+      date: reservedDate,
+      reservedTime,
+      time: reservedTime,
+      area: body.area || body.areaName || body.areaId || "",
+      areaId: body.areaId || body.area || "",
+      areaName: body.areaName || body.area || body.areaId || "",
+      tableIds,
+      tableId: tableIds[0] || body.tableId || null,
+      status: body.status || "Pending",
+      notes: body.notes || body.comment || "",
+      internalNote: body.internalNote || "",
+      createdByAdmin: Boolean(body.createdByAdmin),
+      createdAtUtc: body.createdAtUtc || new Date().toISOString(),
+    };
+  }
 
   const menu = [
     {
@@ -140,7 +201,11 @@
 
     if (path === "/api/menu") {
       if (method === "GET") return json(menu);
-      if (method === "POST") return json({ id: menu.length + 1, ...(await readBody(options)) });
+      if (method === "POST") {
+        const menuItem = { id: menu.length + 1, ...(await readBody(options)) };
+        menu.push(menuItem);
+        return json(menuItem);
+      }
     }
 
     if (path.startsWith("/api/menu/")) {
@@ -155,19 +220,15 @@
       if (method === "GET") return json(state.reservations);
       if (method === "POST") {
         const body = await readBody(options);
-        const reservation = {
-          id: state.nextReservationId++,
-          status: "Pending",
-          createdAtUtc: new Date().toISOString(),
-          tableIds: body.tableIds || (body.tableId ? [body.tableId] : []),
-          ...body,
-        };
+        const reservation = normalizeReservation(body);
         state.reservations.unshift(reservation);
+        persistState();
         window.dispatchEvent(
           new CustomEvent("seatmap:reservation-created", {
             detail: { reservation },
           })
         );
+        openAdminAfterReservation();
         return json(reservation, { status: 201 });
       }
     }
@@ -198,6 +259,7 @@
           reservation.areaId = body.areaId || reservation.areaId;
           reservation.areaName = body.areaName || reservation.areaName;
         }
+        persistState();
       }
 
       return json(reservation || { ok: true });
@@ -210,14 +272,20 @@
 
     if (path === "/api/blacklist") {
       if (method === "GET") return json(state.blacklist);
-      if (method === "POST") return json({ id: state.blacklist.length + 1, ...(await readBody(options)) });
+      if (method === "POST") {
+        const record = { id: state.blacklist.length + 1, createdAtUtc: new Date().toISOString(), ...(await readBody(options)) };
+        state.blacklist.unshift(record);
+        persistState();
+        return json(record);
+      }
     }
     if (path.startsWith("/api/blacklist/")) return json({ ok: true });
 
     if (path === "/api/admin/login" || path === "/api/admin/device-login") {
+      ensureDemoAdminSession();
       return json({
         token: "seatmap-demo-token",
-        user: { id: 1, name: "Demo Admin", email: "admin@seatmap.local", role: "Owner" },
+        user: demoAdminUser,
       });
     }
     if (path === "/api/admin/users") return json(state.admins);
