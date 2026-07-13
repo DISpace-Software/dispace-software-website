@@ -219,6 +219,108 @@
         transform: translateY(-1px);
       }
 
+      .seatmap-reservation-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 2147483646;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: clamp(16px, 3vw, 28px);
+        background: rgba(8, 6, 4, 0.74);
+        backdrop-filter: blur(18px);
+      }
+
+      .seatmap-reservation-modal.is-open {
+        display: flex;
+      }
+
+      .seatmap-reservation-panel {
+        width: min(620px, 100%);
+        border: 1px solid rgba(242, 211, 154, 0.28);
+        border-radius: 28px;
+        background:
+          radial-gradient(circle at top left, rgba(242, 211, 154, 0.16), transparent 24rem),
+          linear-gradient(145deg, rgba(23, 18, 14, 0.98), rgba(10, 8, 6, 0.98));
+        box-shadow: 0 34px 110px rgba(0, 0, 0, 0.58);
+        color: #fff4df;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        padding: clamp(24px, 4vw, 36px);
+      }
+
+      .seatmap-reservation-kicker {
+        margin: 0 0 16px;
+        color: #f2d39a;
+        font-size: 12px;
+        font-weight: 900;
+        letter-spacing: 0.28em;
+        text-transform: uppercase;
+      }
+
+      .seatmap-reservation-title {
+        margin: 0;
+        color: #fff4df;
+        font-size: clamp(30px, 5vw, 44px);
+        line-height: 1.12;
+        letter-spacing: 0;
+      }
+
+      .seatmap-reservation-copy {
+        margin: 18px 0 0;
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 15px;
+        font-weight: 650;
+        line-height: 1.7;
+      }
+
+      .seatmap-reservation-summary {
+        display: grid;
+        gap: 10px;
+        margin: 22px 0 0;
+        padding: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.055);
+        color: rgba(255, 255, 255, 0.76);
+        font-size: 14px;
+        font-weight: 700;
+      }
+
+      .seatmap-reservation-actions {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 12px;
+        margin-top: 26px;
+      }
+
+      .seatmap-reservation-primary,
+      .seatmap-reservation-secondary {
+        min-height: 52px;
+        border-radius: 16px;
+        padding: 0 18px;
+        font-size: 14px;
+        font-weight: 900;
+        cursor: pointer;
+      }
+
+      .seatmap-reservation-primary {
+        border: 1px solid rgba(255, 244, 223, 0.34);
+        background: linear-gradient(135deg, #f5d996, #b9873c);
+        color: #18110a;
+      }
+
+      .seatmap-reservation-secondary {
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        background: rgba(255, 255, 255, 0.07);
+        color: #fff4df;
+      }
+
+      @media (max-width: 620px) {
+        .seatmap-reservation-actions {
+          grid-template-columns: 1fr;
+        }
+      }
+
       @media (max-width: 820px) {
         .seatmap-entry-panel {
           max-height: 94svh;
@@ -356,6 +458,26 @@
         </div>
       </div>
     </div>
+    <div
+      id="seatmapReservationAdminModal"
+      class="seatmap-reservation-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="seatmapReservationTitle"
+    >
+      <div class="seatmap-reservation-panel">
+        <p id="seatmapReservationKicker" class="seatmap-reservation-kicker">Резервация создана</p>
+        <h2 id="seatmapReservationTitle" class="seatmap-reservation-title">Откройте админ-панель, чтобы увидеть бронь.</h2>
+        <p id="seatmapReservationCopy" class="seatmap-reservation-copy">
+          Бронь сохранена только в этом браузере. В админке можно проверить, как она появляется у команды ресторана.
+        </p>
+        <div id="seatmapReservationSummary" class="seatmap-reservation-summary" hidden></div>
+        <div class="seatmap-reservation-actions">
+          <button id="seatmapOpenAdminPanel" class="seatmap-reservation-primary" type="button">Открыть админ-панель</button>
+          <button id="seatmapStayOnDemo" class="seatmap-reservation-secondary" type="button">Остаться здесь</button>
+        </div>
+      </div>
+    </div>
     <div id="root"></div>
     <script>
       (function () {
@@ -388,9 +510,21 @@
           path === "/index.html";
         if (!shouldShow || window.sessionStorage.getItem("seatmap-entry-complete") === "true") return;
 
+        function setDemoAdminSession() {
+          try {
+            window.sessionStorage.setItem("admin-token", "seatmap-demo-token");
+            window.sessionStorage.setItem(
+              "admin-user",
+              JSON.stringify({ id: 1, name: "Demo Admin", email: "admin@seatmap.local", role: "Owner" })
+            );
+          } catch {}
+        }
+
         function closeModal(targetPath, version) {
           window.sessionStorage.setItem("seatmap-entry-complete", "true");
+          window.sessionStorage.setItem("seatmap-admin-mode", version);
           window.localStorage.setItem("seatmap-demo-version", version);
+          if (version === "pro") setDemoAdminSession();
           modal.classList.remove("is-open");
           document.body.classList.remove("seatmap-version-lock");
           window.location.href = targetPath;
@@ -404,6 +538,116 @@
         modal.querySelector('[data-seatmap-version="pro"]')?.addEventListener("click", function () {
           closeModal("./admin/", "pro");
         });
+      })();
+    </script>
+    <script>
+      (function () {
+        var modal = document.getElementById("seatmapReservationAdminModal");
+        var openButton = document.getElementById("seatmapOpenAdminPanel");
+        var closeButton = document.getElementById("seatmapStayOnDemo");
+        var title = document.getElementById("seatmapReservationTitle");
+        var copy = document.getElementById("seatmapReservationCopy");
+        var kicker = document.getElementById("seatmapReservationKicker");
+        var summary = document.getElementById("seatmapReservationSummary");
+        if (!modal || !openButton || !closeButton) return;
+
+        var messages = {
+          ru: {
+            kicker: "Резервация создана",
+            basicTitle: "Откройте админ-панель, чтобы увидеть бронь.",
+            proTitle: "Откройте Pro админ-панель.",
+            basicCopy: "Бронь сохранена только в этом браузере. В админке можно проверить, как она появляется у команды ресторана.",
+            proCopy: "Бронь сохранена только в этом браузере. Pro режим откроет полную среду с заказами, ролями, CRM и управленческими модулями.",
+            openBasic: "Открыть админ-панель",
+            openPro: "Открыть Pro админ-панель",
+            stay: "Остаться здесь",
+          },
+          en: {
+            kicker: "Reservation created",
+            basicTitle: "Open the admin panel to see the booking.",
+            proTitle: "Open the Pro admin panel.",
+            basicCopy: "The booking is saved only in this browser. The admin panel shows how it appears for the restaurant team.",
+            proCopy: "The booking is saved only in this browser. Pro mode opens the full workspace with orders, roles, CRM and management modules.",
+            openBasic: "Open admin panel",
+            openPro: "Open Pro admin panel",
+            stay: "Stay here",
+          },
+          bg: {
+            kicker: "Резервацията е създадена",
+            basicTitle: "Отворете админ панела, за да видите резервацията.",
+            proTitle: "Отворете Pro админ панела.",
+            basicCopy: "Резервацията е записана само в този браузър. В админ панела може да проверите как се вижда от екипа.",
+            proCopy: "Резервацията е записана само в този браузър. Pro режимът отваря пълна среда с поръчки, роли, CRM и управленски модули.",
+            openBasic: "Отвори админ панел",
+            openPro: "Отвори Pro админ панел",
+            stay: "Остани тук",
+          },
+        };
+
+        function currentLanguage() {
+          var language = window.localStorage.getItem("restaurant-lang") || window.localStorage.getItem("dispace-language") || "ru";
+          return messages[language] ? language : "ru";
+        }
+
+        function currentVersion() {
+          return window.localStorage.getItem("seatmap-demo-version") === "pro" ? "pro" : "basic";
+        }
+
+        function setAdminSession() {
+          try {
+            window.sessionStorage.setItem("admin-token", "seatmap-demo-token");
+            window.sessionStorage.setItem(
+              "admin-user",
+              JSON.stringify({ id: 1, name: "Demo Admin", email: "admin@seatmap.local", role: "Owner" })
+            );
+          } catch {}
+        }
+
+        function reservationLine(reservation) {
+          if (!reservation) return "";
+          var name = reservation.guestName || reservation.name || "";
+          var date = reservation.reservedDate || reservation.date || "";
+          var time = reservation.reservedTime || reservation.time || "";
+          var guests = reservation.guestCount || reservation.guests || "";
+          return [name, date && time ? date + " " + time : date || time, guests ? guests + " guests" : ""]
+            .filter(Boolean)
+            .join(" · ");
+        }
+
+        function openModal(event) {
+          var reservation = event.detail && event.detail.reservation;
+          var language = currentLanguage();
+          var version = currentVersion();
+          var text = messages[language];
+
+          setAdminSession();
+          kicker.textContent = text.kicker;
+          title.textContent = version === "pro" ? text.proTitle : text.basicTitle;
+          copy.textContent = version === "pro" ? text.proCopy : text.basicCopy;
+          openButton.textContent = version === "pro" ? text.openPro : text.openBasic;
+          closeButton.textContent = text.stay;
+
+          var line = reservationLine(reservation);
+          summary.hidden = !line;
+          summary.textContent = line;
+
+          modal.classList.add("is-open");
+        }
+
+        openButton.addEventListener("click", function () {
+          var version = currentVersion();
+          window.localStorage.setItem("seatmap-demo-version", version);
+          window.sessionStorage.setItem("seatmap-entry-complete", "true");
+          window.sessionStorage.setItem("seatmap-admin-mode", version);
+          setAdminSession();
+          window.location.href = version === "pro" ? "./admin/?version=pro" : "./admin/?version=basic";
+        });
+
+        closeButton.addEventListener("click", function () {
+          modal.classList.remove("is-open");
+        });
+
+        window.addEventListener("seatmap:reservation-created", openModal);
       })();
     </script>
   </body>

@@ -80,12 +80,14 @@
     }
   }
 
-  function openAdminAfterReservation() {
+  function openAdminAfterReservation(reservation) {
     ensureDemoAdminSession();
-    window.setTimeout(() => {
-      const adminUrl = new URL("./admin/", document.baseURI || window.location.href).href;
-      if (window.location.href !== adminUrl) window.location.assign(adminUrl);
-    }, 350);
+    try {
+      window.sessionStorage.setItem("seatmap-last-reservation-id", String(reservation?.id || ""));
+      window.sessionStorage.setItem("seatmap-open-admin-after-reservation", "true");
+    } catch {
+      // The admin panel can still be opened manually if browser storage is unavailable.
+    }
   }
 
   function normalizeReservation(body) {
@@ -223,12 +225,12 @@
         const reservation = normalizeReservation(body);
         state.reservations.unshift(reservation);
         persistState();
+        openAdminAfterReservation(reservation);
         window.dispatchEvent(
           new CustomEvent("seatmap:reservation-created", {
             detail: { reservation },
           })
         );
-        openAdminAfterReservation();
         return json(reservation, { status: 201 });
       }
     }
