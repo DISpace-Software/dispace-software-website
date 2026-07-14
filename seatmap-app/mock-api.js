@@ -43,6 +43,16 @@
     merged.audit = Array.isArray(merged.audit) && merged.audit.length ? merged.audit : base.audit;
 
     const maxReservationId = merged.reservations.reduce((max, item) => Math.max(max, Number(item.id) || 0), 0);
+    merged.reservations = merged.reservations.map((reservation) => {
+      if (reservation && reservation.status === "Arrived") {
+        return {
+          ...reservation,
+          status: "Approved",
+          isArrived: true,
+        };
+      }
+      return reservation;
+    });
     merged.nextReservationId = Math.max(Number(merged.nextReservationId) || 1, maxReservationId + 1);
     return merged;
   }
@@ -244,9 +254,20 @@
       if (reservation) {
         if (action === "approve") reservation.status = "Approved";
         if (action === "cancel") reservation.status = "Cancelled";
-        if (action === "arrive") reservation.status = "Arrived";
-        if (action === "no-show") reservation.status = "No-show";
-        if (action === "release") reservation.status = "Released";
+        if (action === "arrive") {
+          reservation.status = "Approved";
+          reservation.isArrived = true;
+          reservation.arrivedAtUtc = new Date().toISOString();
+        }
+        if (action === "no-show") {
+          reservation.status = "No-show";
+          reservation.isNoShow = true;
+        }
+        if (action === "release") {
+          reservation.status = "Released";
+          reservation.isArrived = false;
+          reservation.releasedAtUtc = new Date().toISOString();
+        }
         if (action === "note") reservation.internalNote = body.internalNote || body.note || reservation.internalNote || "";
         if (action === "tables") {
           reservation.tableIds = Array.isArray(body.tableIds)
