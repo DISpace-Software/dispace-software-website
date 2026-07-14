@@ -4,6 +4,19 @@
     <meta charset="UTF-8" />
     <script>
       (function () {
+        var knownRoutes = [
+          "/seatmap-app/admin",
+          "/seatmap-app/reservation",
+          "/seatmap-app/menu",
+          "/seatmap-app/privacy",
+          "/seatmap-app/reservation-confirm",
+          "/seatmap-app/feedback",
+        ];
+        var normalizedPath = window.location.pathname.replace(/\/+$/, "");
+        if (knownRoutes.indexOf(normalizedPath) !== -1 && normalizedPath !== window.location.pathname) {
+          window.history.replaceState({}, "", normalizedPath + window.location.search + window.location.hash);
+        }
+
         var base = document.createElement("base");
         var isSeatMapPath = window.location.pathname.indexOf("/seatmap-app/") === 0;
         base.href = isSeatMapPath
@@ -533,10 +546,10 @@
         document.body.classList.add("seatmap-version-lock");
         modal.classList.add("is-open");
         modal.querySelector('[data-seatmap-version="basic"]')?.addEventListener("click", function () {
-          closeModal("./reservation/", "basic");
+          closeModal("/seatmap-app/reservation", "basic");
         });
         modal.querySelector('[data-seatmap-version="pro"]')?.addEventListener("click", function () {
-          closeModal("./admin/", "pro");
+          closeModal("/seatmap-app/admin?version=pro", "pro");
         });
       })();
     </script>
@@ -640,7 +653,7 @@
           window.sessionStorage.setItem("seatmap-entry-complete", "true");
           window.sessionStorage.setItem("seatmap-admin-mode", version);
           setAdminSession();
-          window.location.href = version === "pro" ? "./admin/?version=pro" : "./admin/?version=basic";
+          window.location.href = version === "pro" ? "/seatmap-app/admin?version=pro" : "/seatmap-app/admin?version=basic";
         });
 
         closeButton.addEventListener("click", function () {
