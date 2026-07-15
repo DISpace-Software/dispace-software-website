@@ -16,21 +16,21 @@
   ];
 
   const fallbackMenu = [
-    ["Burrata con Pomodorini", "Creamy burrata, cherry tomatoes, basil oil.", "Starters", 28, "./seatmap-terrace-restaurant.png"],
-    ["Vitello Tonnato", "Slow cooked veal, tuna sauce and capers.", "Starters", 31, "./seatmap-open-terrace.png"],
-    ["Carpaccio di Manzo", "Beef carpaccio, arugula and parmesan.", "Starters", 32, "./seatmap-hero-restaurant.png"],
-    ["Pizza Prosciutto e Funghi", "Tomato, mozzarella, prosciutto cotto, mushrooms.", "Pizza", 24, "./seatmap-terrace-restaurant.png"],
-    ["Pizza Diavola", "Tomato, mozzarella, spicy salami and chili oil.", "Pizza", 25, "./seatmap-open-terrace.png"],
-    ["Tagliatelle al Tartufo", "Fresh pasta, parmesan cream and black truffle.", "Mains", 36, "./seatmap-hero-restaurant.png"],
-    ["Spaghetti Frutti di Mare", "Mussels, shrimp, calamari and cherry tomatoes.", "Mains", 38, "./seatmap-terrace-restaurant.png"],
-    ["Risotto ai Porcini", "Carnaroli rice, porcini mushrooms and parmesan.", "Mains", 34, "./seatmap-open-terrace.png"],
-    ["Grilled Sea Bass", "Sea bass fillet, grilled vegetables and lemon oil.", "Mains", 42, "./seatmap-hero-restaurant.png"],
-    ["Tiramisu Classico", "Mascarpone cream, espresso, savoiardi and cocoa.", "Desserts", 18, "./seatmap-open-terrace.png"],
-    ["Aperol Spritz", "Aperol, prosecco, soda and orange.", "Drinks", 16, "./seatmap-terrace-restaurant.png"],
-    ["Hugo Spritz", "Prosecco, elderflower, mint, lime and soda.", "Drinks", 16, "./seatmap-open-terrace.png"],
-    ["Italian Lemonade", "Fresh lemon, basil, soda and cane sugar.", "Drinks", 10, "./seatmap-hero-restaurant.png"],
-    ["Espresso Martini", "Vodka, espresso, coffee liqueur and vanilla.", "Drinks", 18, "./seatmap-terrace-restaurant.png"],
-    ["Acqua Panna", "Still mineral water.", "Drinks", 8, "./seatmap-open-terrace.png"],
+    ["Burrata con Pomodorini", "Creamy burrata, cherry tomatoes, basil oil.", "Starters", 28, "./menu-items/burrata-con-pomodorini.jpg"],
+    ["Vitello Tonnato", "Slow cooked veal, tuna sauce and capers.", "Starters", 31, "./menu-items/vitello-tonnato.jpg"],
+    ["Carpaccio di Manzo", "Beef carpaccio, arugula and parmesan.", "Starters", 32, "./menu-items/carpaccio-di-manzo.jpg"],
+    ["Pizza Prosciutto e Funghi", "Tomato, mozzarella, prosciutto cotto, mushrooms.", "Pizza", 24, "./menu-items/pizza-prosciutto-funghi.jpg"],
+    ["Pizza Diavola", "Tomato, mozzarella, spicy salami and chili oil.", "Pizza", 25, "./menu-items/pizza-diavola.jpg"],
+    ["Tagliatelle al Tartufo", "Fresh pasta, parmesan cream and black truffle.", "Mains", 36, "./menu-items/tagliatelle-tartufo.jpg"],
+    ["Spaghetti Frutti di Mare", "Mussels, shrimp, calamari and cherry tomatoes.", "Mains", 38, "./menu-items/spaghetti-frutti-di-mare.jpg"],
+    ["Risotto ai Porcini", "Carnaroli rice, porcini mushrooms and parmesan.", "Mains", 34, "./menu-items/risotto-porcini.jpg"],
+    ["Grilled Sea Bass", "Sea bass fillet, grilled vegetables and lemon oil.", "Mains", 42, "./menu-items/grilled-sea-bass.jpg"],
+    ["Tiramisu Classico", "Mascarpone cream, espresso, savoiardi and cocoa.", "Desserts", 18, "./menu-items/tiramisu-classico.jpg"],
+    ["Aperol Spritz", "Aperol, prosecco, soda and orange.", "Drinks", 16, "./menu-items/aperol-spritz.jpg"],
+    ["Hugo Spritz", "Prosecco, elderflower, mint, lime and soda.", "Drinks", 16, "./menu-items/hugo-spritz.jpg"],
+    ["Italian Lemonade", "Fresh lemon, basil, soda and cane sugar.", "Drinks", 10, "./menu-items/italian-lemonade.jpg"],
+    ["Espresso Martini", "Vodka, espresso, coffee liqueur and vanilla.", "Drinks", 18, "./menu-items/espresso-martini.jpg"],
+    ["Acqua Panna", "Still mineral water.", "Drinks", 8, "./menu-items/acqua-panna.jpg"],
   ].map((item, index) => ({
     id: index + 1,
     name: item[0],
@@ -213,27 +213,32 @@
     grid.innerHTML = menu
       .map(
         (item) => `
-          <article class="seatmap-pro-menu-item">
-            <img src="${item.imageUrl || "./seatmap-hero-restaurant.png"}" alt="">
+          <button class="seatmap-pro-menu-item" type="button" data-menu-id="${item.id}">
+            <img src="${item.imageUrl || "./menu-items/burrata-con-pomodorini.jpg"}" alt="">
+            <span class="seatmap-pro-qty" data-menu-qty="${item.id}">0</span>
             <div class="seatmap-pro-menu-info">
               <h4>${item.name || item.nameRu || item.nameBg}</h4>
               <p>${item.description || item.descriptionRu || item.descriptionBg || ""}</p>
               <strong>${money(item.price)}</strong>
-              <button class="seatmap-pro-ghost" type="button" data-menu-id="${item.id}">Добавить</button>
+              <span class="seatmap-pro-menu-pick">Добавить</span>
             </div>
-          </article>
+          </button>
         `
       )
       .join("");
 
-    grid.querySelectorAll("[data-menu-id]").forEach((button) => {
-      button.addEventListener("click", () => {
-        const item = menu.find((entry) => String(entry.id) === String(button.dataset.menuId));
+    grid.querySelectorAll(".seatmap-pro-menu-item").forEach((card) => {
+      card.addEventListener("click", () => {
+        const item = menu.find((entry) => String(entry.id) === String(card.dataset.menuId));
         if (!item) return;
         const current = selected.get(item.id) || { ...item, qty: 0 };
         current.qty += 1;
         selected.set(item.id, current);
-        button.textContent = `Добавлено ×${current.qty}`;
+        card.classList.add("is-selected");
+        const qty = card.querySelector("[data-menu-qty]");
+        const pick = card.querySelector(".seatmap-pro-menu-pick");
+        if (qty) qty.textContent = current.qty;
+        if (pick) pick.textContent = `Добавлено x${current.qty}`;
         renderTotal();
       });
     });
