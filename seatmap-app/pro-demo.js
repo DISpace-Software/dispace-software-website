@@ -104,6 +104,31 @@
     return `${Number(value || 0).toFixed(0)} лв.`;
   }
 
+  function openLayer(element) {
+    if (!element) return;
+    element.dataset.previousFocusId = document.activeElement?.id || "";
+    element.setAttribute("aria-hidden", "false");
+    element.classList.add("is-open");
+    window.requestAnimationFrame(() => {
+      const focusTarget = element.querySelector("button, [href], input, select, textarea, [tabindex]:not([tabindex='-1'])");
+      focusTarget?.focus({ preventScroll: true });
+    });
+  }
+
+  function closeLayer(element, nextFocus) {
+    if (!element) return;
+    if (element.contains(document.activeElement)) {
+      document.activeElement.blur();
+    }
+    element.classList.remove("is-open");
+    element.setAttribute("aria-hidden", "true");
+    window.requestAnimationFrame(() => {
+      if (nextFocus && document.contains(nextFocus)) {
+        nextFocus.focus({ preventScroll: true });
+      }
+    });
+  }
+
   function buildShell() {
     if (document.getElementById("seatmapProShell")) return;
     document.body.insertAdjacentHTML(
@@ -194,7 +219,7 @@
     buildShell();
     window.seatmapProReservation = reservation || latestArrivedReservation() || readState().reservations[0] || {};
     document.querySelector("[data-pro-email-table]").textContent = normalizeTableId(window.seatmapProReservation);
-    document.getElementById("seatmapProEmail").classList.add("is-open");
+    openLayer(document.getElementById("seatmapProEmail"));
   }
 
   async function openMenu() {
@@ -265,12 +290,12 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(order),
       });
-      modal.classList.remove("is-open");
+      closeLayer(modal);
       openDashboard();
     };
 
     renderTotal();
-    modal.classList.add("is-open");
+    openLayer(modal);
   }
 
   function ticket(order, filter) {
@@ -315,19 +340,19 @@
   function openDashboard() {
     buildShell();
     renderDashboard();
-    document.getElementById("seatmapProShell").classList.add("is-open");
+    openLayer(document.getElementById("seatmapProShell"));
   }
 
   function bindShellEvents() {
     buildShell();
     document.addEventListener("click", (event) => {
-      if (event.target.closest("[data-pro-close-email]")) document.getElementById("seatmapProEmail")?.classList.remove("is-open");
+      if (event.target.closest("[data-pro-close-email]")) closeLayer(document.getElementById("seatmapProEmail"));
       if (event.target.closest("[data-pro-open-menu]")) {
-        document.getElementById("seatmapProEmail")?.classList.remove("is-open");
+        closeLayer(document.getElementById("seatmapProEmail"));
         openMenu();
       }
-      if (event.target.closest("[data-pro-close-menu]")) document.getElementById("seatmapProMenu")?.classList.remove("is-open");
-      if (event.target.closest("[data-pro-close-shell]")) document.getElementById("seatmapProShell")?.classList.remove("is-open");
+      if (event.target.closest("[data-pro-close-menu]")) closeLayer(document.getElementById("seatmapProMenu"));
+      if (event.target.closest("[data-pro-close-shell]")) closeLayer(document.getElementById("seatmapProShell"));
     });
   }
 
