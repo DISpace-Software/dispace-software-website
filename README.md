@@ -30,8 +30,10 @@ The project is intentionally lightweight: no build step is required for the publ
 ├── seatmap-app/
 │   ├── index.html              # Static wrapper for the SeatMap beta app
 │   ├── mock-api.js             # Demo API layer for beta mode
-│   ├── beta-enhance.js         # Extra localization, dock, onboarding, demo helpers
-│   ├── beta-luxury.css         # Visual override layer for the beta app
+│   ├── pro-demo.js             # SeatMap Pro order/kitchen/waiter demo layer
+│   ├── training-demo.js        # Guided Basic/Pro training walkthrough
+│   ├── pro-demo.css            # SeatMap Pro demo styles
+│   ├── training-demo.css       # Guided training overlay styles
 │   └── assets/                 # Built React/Vite assets
 ├── assets/
 │   ├── brand/                  # DISpace logo assets
@@ -224,4 +226,3 @@ git add .
 git commit -m "Describe the change"
 git push
 ```
-

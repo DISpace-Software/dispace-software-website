@@ -1,0 +1,259 @@
+.seatmap-training-launcher {
+  position: fixed;
+  left: 18px;
+  bottom: 18px;
+  z-index: 10010;
+  min-height: 44px;
+  border: 1px solid rgba(242, 211, 154, 0.42);
+  border-radius: 999px;
+  padding: 0 18px;
+  color: #140f0a;
+  background: linear-gradient(135deg, #f7ddb0, #c8954d);
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.28);
+  font: 800 14px/1 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  cursor: pointer;
+}
+
+.seatmap-training-entry-action {
+  margin-left: 10px;
+  border: 1px solid rgba(242, 211, 154, 0.26);
+  cursor: pointer;
+}
+
+.seatmap-training-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 10020;
+  display: none;
+  pointer-events: none;
+  color: #fff4df;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.seatmap-training-layer.is-open {
+  display: block;
+}
+
+.seatmap-training-scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at var(--spotlight-x, 50%) var(--spotlight-y, 50%), transparent 0 116px, rgba(5, 4, 3, 0.54) 178px),
+    rgba(5, 4, 3, 0.18);
+}
+
+.seatmap-training-spotlight {
+  position: absolute;
+  display: none;
+  border: 2px solid rgba(247, 221, 176, 0.92);
+  border-radius: 18px;
+  box-shadow:
+    0 0 0 9999px rgba(5, 4, 3, 0.45),
+    0 0 0 8px rgba(242, 211, 154, 0.12),
+    0 24px 70px rgba(0, 0, 0, 0.34);
+  transition: inset 180ms ease, width 180ms ease, height 180ms ease;
+}
+
+.seatmap-training-spotlight.is-visible {
+  display: block;
+}
+
+.seatmap-training-card {
+  position: absolute;
+  right: 22px;
+  bottom: 22px;
+  width: min(430px, calc(100vw - 28px));
+  max-height: calc(100vh - 44px);
+  overflow: auto;
+  pointer-events: auto;
+  border: 1px solid rgba(242, 211, 154, 0.26);
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at 16% 0%, rgba(242, 211, 154, 0.13), transparent 34%),
+    linear-gradient(145deg, rgba(20, 14, 10, 0.96), rgba(7, 5, 4, 0.96));
+  box-shadow: 0 28px 82px rgba(0, 0, 0, 0.44);
+  backdrop-filter: blur(22px);
+}
+
+.seatmap-training-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 20px 20px 14px;
+}
+
+.seatmap-training-kicker {
+  margin: 0 0 7px;
+  color: #f2d39a;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+}
+
+.seatmap-training-title {
+  margin: 0;
+  color: #fff7e8;
+  font-size: 25px;
+  line-height: 1.08;
+  letter-spacing: 0;
+}
+
+.seatmap-training-close {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  border: 1px solid rgba(242, 211, 154, 0.22);
+  border-radius: 999px;
+  color: #fff4df;
+  background: rgba(255, 255, 255, 0.06);
+  font-size: 22px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.seatmap-training-body {
+  padding: 0 20px 18px;
+}
+
+.seatmap-training-copy {
+  margin: 0;
+  color: rgba(255, 244, 223, 0.72);
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.seatmap-training-note {
+  margin: 12px 0 0;
+  border: 1px solid rgba(242, 211, 154, 0.18);
+  border-radius: 16px;
+  padding: 11px 12px;
+  color: rgba(255, 244, 223, 0.76);
+  background: rgba(255, 255, 255, 0.045);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.seatmap-training-modes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.seatmap-training-mode {
+  min-height: 72px;
+  border: 1px solid rgba(242, 211, 154, 0.22);
+  border-radius: 18px;
+  padding: 12px;
+  color: #fff4df;
+  background: rgba(255, 255, 255, 0.055);
+  text-align: left;
+  cursor: pointer;
+}
+
+.seatmap-training-mode strong {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 18px;
+}
+
+.seatmap-training-mode span {
+  color: rgba(255, 244, 223, 0.63);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.seatmap-training-mode.is-active {
+  border-color: rgba(247, 221, 176, 0.78);
+  background: rgba(242, 211, 154, 0.14);
+  box-shadow: inset 0 0 0 1px rgba(247, 221, 176, 0.18);
+}
+
+.seatmap-training-progress {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 20px 16px;
+}
+
+.seatmap-training-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: rgba(255, 244, 223, 0.22);
+}
+
+.seatmap-training-dot.is-active {
+  width: 22px;
+  background: linear-gradient(135deg, #f7ddb0, #c8954d);
+}
+
+.seatmap-training-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 14px;
+}
+
+.seatmap-training-button,
+.seatmap-training-ghost {
+  min-height: 42px;
+  border: 1px solid rgba(242, 211, 154, 0.28);
+  border-radius: 999px;
+  padding: 0 15px;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.seatmap-training-button {
+  color: #140f0a;
+  background: linear-gradient(135deg, #f7ddb0, #bd8a43);
+}
+
+.seatmap-training-ghost {
+  color: #fff4df;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.seatmap-training-ghost:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+.seatmap-training-status {
+  margin-right: auto;
+  color: rgba(255, 244, 223, 0.58);
+  font-size: 12px;
+  font-weight: 750;
+}
+
+@media (max-width: 720px) {
+  .seatmap-training-launcher {
+    left: 12px;
+    bottom: 12px;
+  }
+
+  .seatmap-training-card {
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+    width: auto;
+    border-radius: 20px;
+  }
+
+  .seatmap-training-title {
+    font-size: 21px;
+  }
+
+  .seatmap-training-actions {
+    flex-wrap: wrap;
+  }
+
+  .seatmap-training-status {
+    width: 100%;
+  }
+}
