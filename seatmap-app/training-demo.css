@@ -17,7 +17,7 @@
 .seatmap-training-layer {
   position: fixed;
   inset: 0;
-  z-index: 10020;
+  z-index: 2147483647;
   display: none;
   pointer-events: none;
   color: #fff4df;

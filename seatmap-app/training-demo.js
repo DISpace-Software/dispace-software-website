@@ -132,6 +132,13 @@
     document.body.classList.remove("seatmap-version-lock");
   }
 
+  function showEntryModal() {
+    const modal = document.getElementById("seatmapEntryModal");
+    if (!modal) return;
+    document.body.classList.add("seatmap-version-lock");
+    modal.classList.add("is-open");
+  }
+
   function targetPath(nextMode, training = false) {
     const params = new URLSearchParams();
     params.set("version", nextMode);
@@ -446,6 +453,7 @@
       if (layer.dataset.trainingView === "launch") {
         layer.classList.remove("is-open");
         layer.setAttribute("aria-hidden", "true");
+        showEntryModal();
         return;
       }
       previousStep();
@@ -620,6 +628,7 @@
   }
 
   function showLaunchChoice(nextMode) {
+    hideEntryModal();
     buildLayer();
     window.sessionStorage.setItem(modeKey, nextMode);
     const layer = document.getElementById("seatmapTrainingLayer");
@@ -652,6 +661,7 @@
     layer.querySelector(".seatmap-training-progress").innerHTML = "";
     layer.querySelector(".seatmap-training-status").textContent = nextMode === "pro" ? "Pro" : "Basic";
     layer.querySelector("[data-training-prev]").disabled = false;
+    layer.querySelector("[data-training-prev]").textContent = t("prev");
     layer.querySelector("[data-training-action]").hidden = true;
     layer.querySelector("[data-training-next]").textContent = t("withTraining");
     layer.querySelector(".seatmap-training-spotlight").classList.remove("is-visible");
