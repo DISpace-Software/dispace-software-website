@@ -5,6 +5,58 @@
   const storageKey = "seatmap-demo-state-v3";
   const recordTtlMs = 3 * 60 * 60 * 1000;
   const demoAdminUser = { id: 1, name: "Demo Admin", email: "admin@seatmap.local", role: "Owner" };
+  const defaultTableLayout = [
+    ...[
+      { id: "1", x: 83, y: 12, seats: 4, wide: true },
+      { id: "2", x: 83, y: 22, seats: 4, wide: true },
+      { id: "3", x: 83, y: 32, seats: 4, wide: true },
+      { id: "4", x: 83, y: 42, seats: 4, wide: true },
+      { id: "5", x: 51, y: 22, seats: 6, wide: true },
+      { id: "6", x: 51, y: 35, seats: 6, wide: true },
+      { id: "7", x: 16, y: 10, seats: 4, wide: true },
+      { id: "8", x: 16, y: 20, seats: 6, wide: true },
+      { id: "9", x: 16, y: 30, seats: 6, wide: true },
+      { id: "10", x: 16, y: 40, seats: 6, wide: true },
+      { id: "11", x: 16, y: 50, seats: 6, wide: true },
+      { id: "20", x: 82, y: 60, seats: 4, wide: true },
+      { id: "21", x: 82, y: 70, seats: 4, wide: true },
+      { id: "22", x: 82, y: 80, seats: 4, wide: true },
+      { id: "23", x: 82, y: 90, seats: 4, wide: true },
+      { id: "24", x: 53, y: 65, seats: 6, wide: true },
+      { id: "25", x: 54, y: 78, seats: 6 },
+      { id: "26", x: 55, y: 90, seats: 4, wide: true },
+      { id: "27", x: 35, y: 92, seats: 4, wide: true },
+      { id: "28", x: 16, y: 90, seats: 6, wide: true },
+      { id: "29", x: 16, y: 80, seats: 6, wide: true },
+    ].map((table) => ({ ...table, area: "indoor", isActive: true })),
+    ...[
+      { id: "42", x: 17, y: 22, seats: 4 },
+      { id: "43", x: 17, y: 42, seats: 4 },
+      { id: "44", x: 17, y: 62, seats: 4 },
+      { id: "45", x: 17, y: 82, seats: 4 },
+      { id: "38", x: 38, y: 24, seats: 4 },
+      { id: "39", x: 38, y: 44, seats: 4 },
+      { id: "40", x: 38, y: 64, seats: 4 },
+      { id: "41", x: 38, y: 84, seats: 4 },
+      { id: "34", x: 59, y: 24, seats: 4 },
+      { id: "35", x: 59, y: 44, seats: 4 },
+      { id: "36", x: 59, y: 64, seats: 4 },
+      { id: "37", x: 59, y: 84, seats: 4 },
+      { id: "30", x: 78, y: 22, seats: 4 },
+      { id: "31", x: 78, y: 42, seats: 4 },
+      { id: "32", x: 78, y: 62, seats: 4 },
+      { id: "33", x: 78, y: 82, seats: 4 },
+      { id: "34A", x: 58, y: 10, seats: 2, special: true },
+      { id: "30A", x: 75, y: 10, seats: 2, special: true },
+      { id: "45A", x: 28, y: 93, seats: 2, special: true },
+    ].map((table) => ({ ...table, area: "garden", isActive: true })),
+    ...[
+      { id: "46", x: 34, y: 40, seats: 4 },
+      { id: "47", x: 66, y: 40, seats: 4 },
+      { id: "48", x: 34, y: 68, seats: 2, special: true },
+      { id: "49", x: 66, y: 68, seats: 2, special: true },
+    ].map((table) => ({ ...table, area: "openTerrace", isActive: true })),
+  ];
 
   function createInitialState() {
     return {
@@ -430,7 +482,7 @@
     }
 
     if (path === "/api/reservations/blocked-slots") return json([]);
-    if (path === "/api/table-layouts") return json([]);
+    if (path === "/api/table-layouts") return json(defaultTableLayout);
     if (path === "/api/table-layouts/reset") return json([]);
 
     if (path === "/api/reservations") {

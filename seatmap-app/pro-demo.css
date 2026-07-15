@@ -123,6 +123,11 @@
   padding: 13px;
 }
 
+.seatmap-pro-ticket.is-ready {
+  border-color: rgba(52, 211, 153, 0.42);
+  background: rgba(16, 185, 129, 0.11);
+}
+
 .seatmap-pro-ticket strong {
   color: #fff;
 }
@@ -137,6 +142,25 @@
   gap: 6px;
   color: rgba(255, 244, 223, 0.84);
   font-size: 13px;
+}
+
+.seatmap-pro-items .is-ready {
+  color: #a7f3d0;
+}
+
+.seatmap-pro-ready {
+  min-height: 38px;
+  border: 1px solid rgba(52, 211, 153, 0.36);
+  border-radius: 999px;
+  background: rgba(16, 185, 129, 0.14);
+  color: #d1fae5;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.seatmap-pro-ready:disabled {
+  cursor: default;
+  opacity: 0.72;
 }
 
 .seatmap-pro-map {
@@ -159,6 +183,26 @@
   background-size: 42px 42px, 42px 42px, auto, auto;
 }
 
+.seatmap-pro-table-map[data-area="garden"] {
+  min-height: 620px;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    radial-gradient(circle at 50% 6%, rgba(60, 169, 126, 0.16), transparent 34%),
+    linear-gradient(180deg, rgba(34, 40, 28, 0.96), rgba(16, 18, 13, 0.96));
+  background-size: 42px 42px, 42px 42px, auto, auto;
+}
+
+.seatmap-pro-table-map[data-area="openTerrace"] {
+  min-height: 500px;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    radial-gradient(circle at 50% 0%, rgba(110, 231, 183, 0.15), transparent 34%),
+    linear-gradient(180deg, rgba(30, 34, 25, 0.96), rgba(14, 16, 11, 0.96));
+  background-size: 42px 42px, 42px 42px, auto, auto;
+}
+
 .seatmap-pro-table {
   position: absolute;
   display: grid;
@@ -172,12 +216,31 @@
   font-size: 12px;
   font-weight: 800;
   text-align: center;
+  transform: translate(-50%, -50%);
+}
+
+.seatmap-pro-table.is-wide {
+  width: 92px;
+}
+
+.seatmap-pro-table.is-special {
+  width: 68px;
+  height: 48px;
+  border-radius: 16px;
 }
 
 .seatmap-pro-table.has-order {
   border-color: rgba(52, 211, 153, 0.8);
   background: rgba(16, 185, 129, 0.18);
   box-shadow: 0 0 0 6px rgba(16, 185, 129, 0.08);
+}
+
+.seatmap-pro-table.has-ready {
+  border-color: rgba(16, 185, 129, 1);
+  background: linear-gradient(145deg, rgba(16, 185, 129, 0.34), rgba(5, 150, 105, 0.2));
+  box-shadow:
+    0 0 0 7px rgba(16, 185, 129, 0.14),
+    0 18px 36px rgba(16, 185, 129, 0.18);
 }
 
 .seatmap-pro-email,

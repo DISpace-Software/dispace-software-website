@@ -4,16 +4,58 @@
   const ttlMs = 3 * 60 * 60 * 1000;
   const demoAdmin = { id: 1, name: "Demo Admin", email: "admin@seatmap.local", role: "Owner" };
 
-  const demoTables = [
-    { id: "T1", x: 10, y: 16 },
-    { id: "T2", x: 34, y: 18 },
-    { id: "T3", x: 62, y: 15 },
-    { id: "T4", x: 18, y: 46 },
-    { id: "T5", x: 48, y: 48 },
-    { id: "T6", x: 72, y: 48 },
-    { id: "T7", x: 28, y: 72 },
-    { id: "T8", x: 58, y: 73 },
-  ];
+  const tableLayout = {
+    indoor: [
+      { id: "1", x: 83, y: 12, seats: 4, wide: true },
+      { id: "2", x: 83, y: 22, seats: 4, wide: true },
+      { id: "3", x: 83, y: 32, seats: 4, wide: true },
+      { id: "4", x: 83, y: 42, seats: 4, wide: true },
+      { id: "5", x: 51, y: 22, seats: 6, wide: true },
+      { id: "6", x: 51, y: 35, seats: 6, wide: true },
+      { id: "7", x: 16, y: 10, seats: 4, wide: true },
+      { id: "8", x: 16, y: 20, seats: 6, wide: true },
+      { id: "9", x: 16, y: 30, seats: 6, wide: true },
+      { id: "10", x: 16, y: 40, seats: 6, wide: true },
+      { id: "11", x: 16, y: 50, seats: 6, wide: true },
+      { id: "20", x: 82, y: 60, seats: 4, wide: true },
+      { id: "21", x: 82, y: 70, seats: 4, wide: true },
+      { id: "22", x: 82, y: 80, seats: 4, wide: true },
+      { id: "23", x: 82, y: 90, seats: 4, wide: true },
+      { id: "24", x: 53, y: 65, seats: 6, wide: true },
+      { id: "25", x: 54, y: 78, seats: 6 },
+      { id: "26", x: 55, y: 90, seats: 4, wide: true },
+      { id: "27", x: 35, y: 92, seats: 4, wide: true },
+      { id: "28", x: 16, y: 90, seats: 6, wide: true },
+      { id: "29", x: 16, y: 80, seats: 6, wide: true },
+    ],
+    garden: [
+      { id: "42", x: 17, y: 22, seats: 4 },
+      { id: "43", x: 17, y: 42, seats: 4 },
+      { id: "44", x: 17, y: 62, seats: 4 },
+      { id: "45", x: 17, y: 82, seats: 4 },
+      { id: "38", x: 38, y: 24, seats: 4 },
+      { id: "39", x: 38, y: 44, seats: 4 },
+      { id: "40", x: 38, y: 64, seats: 4 },
+      { id: "41", x: 38, y: 84, seats: 4 },
+      { id: "34", x: 59, y: 24, seats: 4 },
+      { id: "35", x: 59, y: 44, seats: 4 },
+      { id: "36", x: 59, y: 64, seats: 4 },
+      { id: "37", x: 59, y: 84, seats: 4 },
+      { id: "30", x: 78, y: 22, seats: 4 },
+      { id: "31", x: 78, y: 42, seats: 4 },
+      { id: "32", x: 78, y: 62, seats: 4 },
+      { id: "33", x: 78, y: 82, seats: 4 },
+      { id: "34A", x: 58, y: 10, seats: 2, special: true },
+      { id: "30A", x: 75, y: 10, seats: 2, special: true },
+      { id: "45A", x: 28, y: 93, seats: 2, special: true },
+    ],
+    openTerrace: [
+      { id: "46", x: 34, y: 40, seats: 4 },
+      { id: "47", x: 66, y: 40, seats: 4 },
+      { id: "48", x: 34, y: 68, seats: 2, special: true },
+      { id: "49", x: 66, y: 68, seats: 2, special: true },
+    ],
+  };
 
   const fallbackMenu = [
     ["Burrata con Pomodorini", "Creamy burrata, cherry tomatoes, basil oil.", "Starters", 28, "./menu-items/burrata-con-pomodorini.jpg"],
@@ -87,10 +129,25 @@
   }
 
   function normalizeTableId(reservation) {
-    const raw = reservation?.tableId || reservation?.tableIds?.[0] || "T5";
-    const text = String(raw).toUpperCase();
-    if (text.startsWith("T")) return text;
-    return `T${Math.max(1, Math.min(8, Number(text.replace(/\D/g, "")) || 5))}`;
+    const raw = reservation?.tableId || reservation?.tableIds?.[0] || "5";
+    return String(raw).trim().replace(/^T/i, "") || "5";
+  }
+
+  function normalizeAreaId(value) {
+    const text = String(value || "").trim();
+    if (["indoor", "garden", "openTerrace"].includes(text)) return text;
+    if (/open|откр|вън|outside/i.test(text)) return "openTerrace";
+    if (/garden|terrace|терас|пуш/i.test(text)) return "garden";
+    return "indoor";
+  }
+
+  function areaForTable(tableId) {
+    const id = String(tableId || "").trim().replace(/^T/i, "");
+    return Object.entries(tableLayout).find(([, tables]) => tables.some((table) => table.id === id))?.[0] || "indoor";
+  }
+
+  function orderAreaFromReservation(reservation) {
+    return normalizeAreaId(reservation.areaId || reservation.area || reservation.areaName || areaForTable(normalizeTableId(reservation)));
   }
 
   function latestArrivedReservation() {
@@ -101,7 +158,7 @@
   }
 
   function money(value) {
-    return `${Number(value || 0).toFixed(0)} лв.`;
+    return `€${Number(value || 0).toFixed(0)}`;
   }
 
   function openLayer(element) {
@@ -163,7 +220,7 @@
             </div>
             <div class="seatmap-pro-menu-grid" data-pro-menu-grid></div>
             <div class="seatmap-pro-menu-bottom">
-              <strong data-pro-menu-total>0 лв.</strong>
+              <strong data-pro-menu-total>€0</strong>
               <button class="seatmap-pro-button" type="button" data-pro-submit-order>Отправить заказ</button>
             </div>
           </div>
@@ -282,6 +339,7 @@
         reservationId: reservation.id || null,
         guestName: reservation.guestName || reservation.name || "Demo Guest",
         tableId: normalizeTableId(reservation),
+        areaId: orderAreaFromReservation(reservation),
         items,
         total: items.reduce((acc, item) => acc + item.price * item.qty, 0),
       };
@@ -298,16 +356,34 @@
     openLayer(modal);
   }
 
-  function ticket(order, filter) {
+  function markOrderItemsReady(orderId, department) {
+    const state = readState();
+    const order = state.orders.find((item) => Number(item.id) === Number(orderId));
+    if (!order) return;
+    const isDrink = (item) => String(item.category || "").toLowerCase().includes("drink");
+    order.items = (order.items || []).map((item) => {
+      const belongsToDepartment = department === "bar" ? isDrink(item) : !isDrink(item);
+      return belongsToDepartment ? { ...item, status: "Ready", readyAtUtc: new Date().toISOString() } : item;
+    });
+    order.updatedAtUtc = new Date().toISOString();
+    writeState(state);
+    renderDashboard();
+  }
+
+  function ticket(order, filter, department) {
     const items = (order.items || []).filter((item) => !filter || filter(item));
     if (!items.length) return "";
+    const allReady = items.every((item) => item.status === "Ready");
     return `
-      <article class="seatmap-pro-ticket">
+      <article class="seatmap-pro-ticket ${allReady ? "is-ready" : ""}">
         <strong>${order.tableId || "T5"} · ${order.guestName || "Guest"}</strong>
         <small>${new Date(order.createdAtUtc || Date.now()).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} · ${money(order.total)}</small>
         <div class="seatmap-pro-items">
-          ${items.map((item) => `<span>${item.qty || 1}× ${item.name}</span>`).join("")}
+          ${items.map((item) => `<span class="${item.status === "Ready" ? "is-ready" : ""}">${item.qty || 1}× ${item.name}${item.status === "Ready" ? " · готово" : ""}</span>`).join("")}
         </div>
+        <button class="seatmap-pro-ready" type="button" data-pro-ready="${order.id}" data-pro-department="${department}" ${allReady ? "disabled" : ""}>
+          ${allReady ? "Готово" : "Отметить готово"}
+        </button>
       </article>
     `;
   }
@@ -320,21 +396,29 @@
     const bar = document.querySelector("[data-pro-bar]");
     const map = document.querySelector("[data-pro-table-map]");
     const isDrink = (item) => String(item.category || "").toLowerCase().includes("drink");
+    const activeArea =
+      normalizeAreaId(orders.find((order) => order.areaId)?.areaId || orderAreaFromReservation(latestArrivedReservation() || {}));
+    const tables = tableLayout[activeArea] || tableLayout.indoor;
 
-    kitchen.innerHTML = orders.map((order) => ticket(order, (item) => !isDrink(item))).join("") || `<p class="seatmap-pro-muted">Пока нет заказов кухни.</p>`;
-    bar.innerHTML = orders.map((order) => ticket(order, isDrink)).join("") || `<p class="seatmap-pro-muted">Пока нет напитков для бара.</p>`;
-    map.innerHTML = demoTables
+    kitchen.innerHTML = orders.map((order) => ticket(order, (item) => !isDrink(item), "kitchen")).join("") || `<p class="seatmap-pro-muted">Пока нет заказов кухни.</p>`;
+    bar.innerHTML = orders.map((order) => ticket(order, isDrink, "bar")).join("") || `<p class="seatmap-pro-muted">Пока нет напитков для бара.</p>`;
+    map.dataset.area = activeArea;
+    map.innerHTML = tables
       .map((table) => {
-        const tableOrders = orders.filter((order) => String(order.tableId || "T5") === table.id);
+        const tableOrders = orders.filter((order) => normalizeAreaId(order.areaId) === activeArea && String(order.tableId || "5") === table.id);
+        const readyItems = tableOrders.flatMap((order) => (order.items || []).filter((item) => item.status === "Ready"));
         const total = tableOrders.reduce((sum, order) => sum + Number(order.total || 0), 0);
         return `
-          <div class="seatmap-pro-table ${tableOrders.length ? "has-order" : ""}" style="left:${table.x}%;top:${table.y}%">
+          <div class="seatmap-pro-table ${table.special ? "is-special" : ""} ${table.wide ? "is-wide" : ""} ${tableOrders.length ? "has-order" : ""} ${readyItems.length ? "has-ready" : ""}" style="left:${table.x}%;top:${table.y}%">
             <span>${table.id}</span>
-            ${tableOrders.length ? `<small>${money(total)}</small>` : ""}
+            ${readyItems.length ? `<small>${readyItems.length} готово</small>` : tableOrders.length ? `<small>${money(total)}</small>` : `<small>${table.seats} места</small>`}
           </div>
         `;
       })
       .join("");
+    document.querySelectorAll("[data-pro-ready]").forEach((button) => {
+      button.addEventListener("click", () => markOrderItemsReady(button.dataset.proReady, button.dataset.proDepartment));
+    });
   }
 
   function openDashboard() {
