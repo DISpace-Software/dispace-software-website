@@ -6,6 +6,7 @@
   const stateKey = "seatmap-demo-state-v3";
   const registrationKey = "seatmap-beta-registration";
   const signalKey = "seatmap-training-signals";
+  const formSubmitEndpoint = "https://formsubmit.co/ajax/4b7282af5aedb970bd660e5221028033";
   const demoAdmin = { id: 1, name: "Demo Admin", email: "admin@seatmap.local", role: "Owner" };
 
   const copy = {
@@ -186,7 +187,7 @@
               <h2 id="seatmapBetaRegistrationTitle" class="seatmap-beta-registration-title">${t("registrationTitle")}</h2>
               <p class="seatmap-beta-registration-copy">${t("registrationCopy")}</p>
             </div>
-            <form class="seatmap-beta-registration-form">
+            <form class="seatmap-beta-registration-form" action="${formSubmitEndpoint}" method="POST">
               <div class="seatmap-beta-registration-grid">
                 <label class="seatmap-beta-registration-label">Ваше имя
                   <input name="testerName" autocomplete="name" required>
@@ -264,7 +265,7 @@
     payload.append("sentAtUtc", new Date().toISOString());
 
     try {
-      fetch("https://formsubmit.co/ajax/dispacesoftware@gmail.com", {
+      fetch(formSubmitEndpoint, {
         method: "POST",
         headers: { Accept: "application/json" },
         body: payload,
