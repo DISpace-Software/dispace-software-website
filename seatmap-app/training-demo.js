@@ -240,6 +240,7 @@
       try {
         window.localStorage.setItem(registrationKey, JSON.stringify({ ...data, registeredAtUtc: new Date().toISOString() }));
       } catch {}
+      sendApplicationEmail("SeatMap beta tester application", data);
       document.getElementById("seatmapBetaRegistration")?.classList.remove("is-open");
       if (shouldAutoStart()) {
         hideEntryModal();
@@ -248,6 +249,43 @@
       } else {
         showEntryModal();
       }
+    });
+  }
+
+  function sendApplicationEmail(subject, data) {
+    const payload = new FormData();
+    payload.append("_subject", subject);
+    payload.append("_template", "table");
+    payload.append("_captcha", "false");
+    Object.entries(data || {}).forEach(([key, value]) => {
+      payload.append(key, String(value ?? ""));
+    });
+    payload.append("page", window.location.href);
+    payload.append("sentAtUtc", new Date().toISOString());
+
+    try {
+      fetch("https://formsubmit.co/ajax/dispacesoftware@gmail.com", {
+        method: "POST",
+        headers: { Accept: "application/json" },
+        body: payload,
+      }).catch(() => {});
+    } catch {}
+  }
+
+  function bindEmailNotifications() {
+    window.addEventListener("seatmap:reservation-created", (event) => {
+      markSignal("submit", "reservation-created");
+      const registration = (() => {
+        try {
+          return JSON.parse(window.localStorage.getItem(registrationKey) || "null") || {};
+        } catch {
+          return {};
+        }
+      })();
+      sendApplicationEmail("SeatMap beta reservation request", {
+        ...registration,
+        ...(event.detail?.reservation || {}),
+      });
     });
   }
 
@@ -488,7 +526,7 @@
       {
         title: "Выберите день",
         copy: "Теперь выберите дату резервации. После выбора дня я автоматически перейду к времени.",
-        target: ["input[type='date']", "text:Сегодня|Tomorrow|Today|Днес|Утре"],
+        target: ["input[type='date']", "text:Сегодня|Tomorrow|Today|Днес|Утре|Пон|Вто|Ср|Чет|Пет|Съб|Нед"],
         signal: "day",
       },
       {
@@ -500,7 +538,7 @@
       {
         title: "Укажите количество гостей",
         copy: "Следующий шаг — количество людей. После этого должна появиться карта выбора столов.",
-        target: ["input[type='number']", "select", "text:гостей|guests|души|people|2"],
+        target: ["input[type='number']", "select", "text:гостей|guests|души|people|човека|2|3|4"],
         signal: "guests",
       },
       {
@@ -514,6 +552,12 @@
         copy: "Теперь выберите конкретный столик на карте. Для демо хорошо подходит стол 6.",
         target: ["text:6", "[data-table-id='6']", "[aria-label*='6']", "[data-table-id]", "[aria-label*='table' i]", "[aria-label*='стол' i]", "button[class*='table' i]"],
         signal: "table",
+      },
+      {
+        title: "Нажмите кнопку бронирования",
+        copy: "После выбора столика нажмите кнопку бронирования. Она откроет форму с оставшимися данными гостя.",
+        target: ["text:Забронировать|Reserve|Book|Резервирай|Продолжить|Continue", "button[type='submit']", "form button", "[class*='primary' i]"],
+        signal: "openForm",
       },
       {
         title: "Заполните данные гостя",
@@ -551,7 +595,7 @@
     if (currentMode !== "pro") return basicSteps;
 
     return [
-      ...basicSteps.slice(0, 8),
+      ...basicSteps.slice(0, 10),
       {
         title: "Pro CRM",
         copy: "В Pro после прихода гостя можно запустить digital menu и заказ. Если брони нет, обучение подготовит тестовую бронь автоматически.",
@@ -786,12 +830,20 @@
     if (!clickable || clickable.closest(".seatmap-training-layer") || clickable.closest(".seatmap-beta-registration")) return;
     const text = describeNode(clickable);
     const active = currentStep().step?.signal;
+    const tag = String(clickable.tagName || "").toLowerCase();
+    const role = clickable.getAttribute?.("role") || "";
+    const isActionish = /button|a|label/.test(tag) || role === "button" || clickable.hasAttribute?.("data-table-id");
 
     if (active === "area" && /зал|зон|сад|терас|terrace|garden|indoor|outside|open|пушачи|основна/.test(text)) markSignal("area", text);
-    if (active === "day" && /(today|tomorrow|днес|утре|сегодня|\d{1,2}[./-]\d{1,2})/.test(text)) markSignal("day", text);
-    if (active === "time" && /(\d{1,2}:\d{2}|час|time)/.test(text)) markSignal("time", text);
-    if (active === "guests" && /(guest|people|гост|душ|човек|\b[1-9]\b)/.test(text)) markSignal("guests", text);
-    if (active === "table" && (/table|стол|маса/.test(text) || /^[\sT]*\d{1,2}[A]?\s*$/i.test(text))) markSignal("table", text);
+    if (active === "day" && (/(today|tomorrow|днес|утре|сегодня|пон|вто|ср|чет|пет|съб|нед|\d{1,2}[./-]\d{1,2})/.test(text) || isActionish)) {
+      markSignal("day", text || "date-click");
+    }
+    if (active === "time" && (/(\d{1,2}:\d{2}|час|time)/.test(text) || isActionish)) markSignal("time", text || "time-click");
+    if (active === "guests" && (/(guest|people|гост|душ|човек|човека|\b[1-9]\b)/.test(text) || isActionish)) {
+      markSignal("guests", text || "guest-click");
+    }
+    if (active === "table" && (/table|стол|маса/.test(text) || /^[\sT]*\d{1,2}[A]?\s*$/i.test(text) || isActionish)) markSignal("table", text || "table-click");
+    if (active === "openForm" && /(заброни|reserve|book|continue|продължи|продолж|резервира)/.test(text)) markSignal("openForm", text);
     if (active === "submit" && /(заброни|reserve|book|submit|отправ|резервира)/.test(text)) markSignal("submit", text);
   }
 
@@ -805,6 +857,7 @@
     if (active === "guests" && (node.type === "number" || /guest|people|гост|душ/i.test(node.name || node.getAttribute("aria-label") || ""))) {
       markSignal("guests", value);
     }
+    if (active === "openForm" && hasContactValues()) markSignal("openForm");
     if (active === "contacts" && hasContactValues()) markSignal("contacts");
   }
 
@@ -1023,6 +1076,7 @@
     patchEntryModal();
     bindVersionChoice();
     bindTrainingTracker();
+    bindEmailNotifications();
     new MutationObserver(() => {
       patchEntryModal();
       if (window.sessionStorage.getItem(activeKey) === "true") positionSpotlight();
