@@ -4,6 +4,8 @@
   const modeKey = "seatmap-training-mode";
   const versionKey = "seatmap-demo-version";
   const stateKey = "seatmap-demo-state-v3";
+  const registrationKey = "seatmap-beta-registration";
+  const signalKey = "seatmap-training-signals";
   const demoAdmin = { id: 1, name: "Demo Admin", email: "admin@seatmap.local", role: "Owner" };
 
   const copy = {
@@ -31,6 +33,12 @@
       withoutTrainingText: "Открыть демо сразу и тестировать самостоятельно.",
       withTraining: "С обучением",
       withTrainingText: "Пошаговые подсказки, подсветка кнопок и быстрые демо-действия.",
+      registrationTitle: "Регистрация для тестирования SeatMap beta",
+      registrationCopy: "Перед запуском демо оставьте ваши данные и данные заведения. Так мы понимаем, кто тестирует систему, и сможем корректно связаться по обратной связи.",
+      registrationSubmit: "Продолжить к выбору версии",
+      registrationNote: "Данные сохраняются только в этом браузере для демо-сценария и не отправляются на внешний сервер.",
+      waitAction: "Ожидаю действие на странице",
+      doneAction: "Готово, действие выполнено",
     },
     en: {
       launcher: "Training",
@@ -56,6 +64,12 @@
       withoutTrainingText: "Open the demo and test it yourself.",
       withTraining: "With training",
       withTrainingText: "Step-by-step guidance, highlighted controls and quick demo actions.",
+      registrationTitle: "Register to test SeatMap beta",
+      registrationCopy: "Before opening the demo, add your details and venue details so we know who is testing the system.",
+      registrationSubmit: "Continue to version choice",
+      registrationNote: "This demo stores the details only in this browser and does not send them to an external server.",
+      waitAction: "Waiting for the page action",
+      doneAction: "Done, action completed",
     },
     bg: {
       launcher: "Обучение",
@@ -81,6 +95,12 @@
       withoutTrainingText: "Отворете демото и тествайте самостоятелно.",
       withTraining: "С обучение",
       withTrainingText: "Стъпки, подсветени контроли и бързи демо действия.",
+      registrationTitle: "Регистрация за тест на SeatMap beta",
+      registrationCopy: "Преди демото оставете вашите данни и данните на заведението, за да знаем кой тества системата.",
+      registrationSubmit: "Продължи към избор на версия",
+      registrationNote: "Данните се пазят само в този браузър за демо сценария и не се изпращат към външен сървър.",
+      waitAction: "Очаквам действие на страницата",
+      doneAction: "Готово, действието е изпълнено",
     },
   };
 
@@ -144,6 +164,99 @@
     params.set("version", nextMode);
     if (training) params.set("tour", "1");
     return `/seatmap-app/reservation?${params.toString()}`;
+  }
+
+  function hasRegistration() {
+    try {
+      return Boolean(JSON.parse(window.localStorage.getItem(registrationKey) || "null")?.testerEmail);
+    } catch {
+      return false;
+    }
+  }
+
+  function buildRegistrationGate() {
+    if (document.getElementById("seatmapBetaRegistration")) return;
+    document.body.insertAdjacentHTML(
+      "beforeend",
+      `
+        <div id="seatmapBetaRegistration" class="seatmap-beta-registration" role="dialog" aria-modal="true" aria-labelledby="seatmapBetaRegistrationTitle">
+          <div class="seatmap-beta-registration-card">
+            <div class="seatmap-beta-registration-head">
+              <p class="seatmap-training-kicker">SeatMap beta</p>
+              <h2 id="seatmapBetaRegistrationTitle" class="seatmap-beta-registration-title">${t("registrationTitle")}</h2>
+              <p class="seatmap-beta-registration-copy">${t("registrationCopy")}</p>
+            </div>
+            <form class="seatmap-beta-registration-form">
+              <div class="seatmap-beta-registration-grid">
+                <label class="seatmap-beta-registration-label">Ваше имя
+                  <input name="testerName" autocomplete="name" required>
+                </label>
+                <label class="seatmap-beta-registration-label">Email
+                  <input name="testerEmail" type="email" autocomplete="email" required>
+                </label>
+                <label class="seatmap-beta-registration-label">Телефон
+                  <input name="testerPhone" type="tel" autocomplete="tel" required>
+                </label>
+                <label class="seatmap-beta-registration-label">Название заведения
+                  <input name="venueName" required>
+                </label>
+                <label class="seatmap-beta-registration-label">Тип заведения
+                  <select name="venueType" required>
+                    <option value="">Выберите тип</option>
+                    <option>Restaurant</option>
+                    <option>Cafe / Bar</option>
+                    <option>Hotel restaurant</option>
+                    <option>Beach club</option>
+                    <option>Other</option>
+                  </select>
+                </label>
+                <label class="seatmap-beta-registration-label">Город / страна
+                  <input name="venueLocation" required>
+                </label>
+                <label class="seatmap-beta-registration-label">Количество столов
+                  <input name="venueTables" type="number" min="1" inputmode="numeric" required>
+                </label>
+                <label class="seatmap-beta-registration-label">Ваш формат теста
+                  <select name="testGoal" required>
+                    <option value="">Выберите цель</option>
+                    <option>Online reservations</option>
+                    <option>Seat map and guest flow</option>
+                    <option>Pro operations</option>
+                    <option>CRM and management</option>
+                  </select>
+                </label>
+              </div>
+              <p class="seatmap-beta-registration-note">${t("registrationNote")}</p>
+              <button class="seatmap-beta-registration-submit" type="submit">${t("registrationSubmit")}</button>
+            </form>
+          </div>
+        </div>
+      `
+    );
+
+    document.querySelector("#seatmapBetaRegistration form")?.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const data = Object.fromEntries(new FormData(event.currentTarget).entries());
+      try {
+        window.localStorage.setItem(registrationKey, JSON.stringify({ ...data, registeredAtUtc: new Date().toISOString() }));
+      } catch {}
+      document.getElementById("seatmapBetaRegistration")?.classList.remove("is-open");
+      if (shouldAutoStart()) {
+        hideEntryModal();
+        window.sessionStorage.setItem(activeKey, "true");
+        render();
+      } else {
+        showEntryModal();
+      }
+    });
+  }
+
+  function showRegistrationGate() {
+    if (hasRegistration()) return false;
+    buildRegistrationGate();
+    hideEntryModal();
+    document.getElementById("seatmapBetaRegistration")?.classList.add("is-open");
+    return true;
   }
 
   function readState() {
@@ -250,6 +363,40 @@
     node.dispatchEvent(new Event("change", { bubbles: true }));
   }
 
+  function readSignals() {
+    try {
+      return JSON.parse(window.sessionStorage.getItem(signalKey) || "{}") || {};
+    } catch {
+      return {};
+    }
+  }
+
+  function writeSignals(signals) {
+    try {
+      window.sessionStorage.setItem(signalKey, JSON.stringify(signals));
+    } catch {}
+  }
+
+  function resetSignals() {
+    writeSignals({});
+  }
+
+  function markSignal(name, detail = true) {
+    const signals = readSignals();
+    signals[name] = detail;
+    writeSignals(signals);
+    if (window.sessionStorage.getItem(activeKey) === "true") {
+      window.setTimeout(() => {
+        render();
+        autoAdvanceIfComplete();
+      }, 120);
+    }
+  }
+
+  function signalDone(name) {
+    return Boolean(readSignals()[name]);
+  }
+
   function fillReservationForm() {
     const textInputs = Array.from(document.querySelectorAll("input:not([type]), input[type='text']"));
     const email = document.querySelector("input[type='email'], input[name*='email' i]");
@@ -268,6 +415,10 @@
       const next = min > 2 ? min : 2;
       dispatchValue(input, String(next));
     });
+    markSignal("day");
+    markSignal("time");
+    markSignal("guests");
+    markSignal("contacts");
   }
 
   function clickFirst(selectors) {
@@ -301,6 +452,7 @@
     const nextMode = mode || "pro";
     setVersion(nextMode);
     hideEntryModal();
+    resetSignals();
     window.sessionStorage.setItem(activeKey, "true");
     window.sessionStorage.setItem(modeKey, nextMode);
     window.sessionStorage.setItem(stepKey, "0");
@@ -328,23 +480,54 @@
   function buildSteps(currentMode) {
     const basicSteps = [
       {
-        title: "Карта бронирования",
-        copy: "Начинаем с формы: дата, время, контакты и количество гостей. Кнопка ниже может заполнить демо-данные, а подсветка показывает рабочую область заявки.",
-        target: ["input[type='date']", "input[type='time']", "input[type='tel']", "input[type='email']", "form"],
-        actionLabel: "Заполнить демо-данные",
-        action: fillReservationForm,
+        title: "Выберите зону",
+        copy: "Сначала выберите зону посадки: основной зал, сад или открытую террасу. Обучалка дождётся именно этого действия.",
+        target: ["text:Зал|Сад|Тераса|Терраса|Indoor|Garden|Terrace|Open terrace|Пушачи|Основна"],
+        signal: "area",
+      },
+      {
+        title: "Выберите день",
+        copy: "Теперь выберите дату резервации. После выбора дня я автоматически перейду к времени.",
+        target: ["input[type='date']", "text:Сегодня|Tomorrow|Today|Днес|Утре"],
+        signal: "day",
+      },
+      {
+        title: "Выберите время",
+        copy: "Выберите удобный слот времени. Например, 19:30 или любой доступный слот в интерфейсе.",
+        target: ["input[type='time']", "text:19:00|19:30|20:00|18:30|час|time"],
+        signal: "time",
+      },
+      {
+        title: "Укажите количество гостей",
+        copy: "Следующий шаг — количество людей. После этого должна появиться карта выбора столов.",
+        target: ["input[type='number']", "select", "text:гостей|guests|души|people|2"],
+        signal: "guests",
+      },
+      {
+        title: "Откройте карту столов",
+        copy: "Когда зона, день, время и гости выбраны, система показывает интерактивную карту. Я подсвечу её, как только она появится.",
+        target: ["[data-table-id]", "[aria-label*='table' i]", "[aria-label*='стол' i]", "button[class*='table' i]", "text:6"],
+        signal: "map",
       },
       {
         title: "Выбор стола",
-        copy: "Нажмите на свободный стол на карте. Для красивого теста можно выбрать стол 6 в основном зале.",
+        copy: "Теперь выберите конкретный столик на карте. Для демо хорошо подходит стол 6.",
         target: ["text:6", "[data-table-id='6']", "[aria-label*='6']", "[data-table-id]", "[aria-label*='table' i]", "[aria-label*='стол' i]", "button[class*='table' i]"],
-        actionLabel: "Подготовить демо-бронь",
-        action: () => ensureDemoReservation(false),
+        signal: "table",
+      },
+      {
+        title: "Заполните данные гостя",
+        copy: "После выбора стола заполните имя, телефон и email. Это финальная форма перед отправкой заявки.",
+        target: ["input[type='text']", "input[type='tel']", "input[type='email']", "form"],
+        signal: "contacts",
+        actionLabel: "Заполнить демо-данные",
+        action: fillReservationForm,
       },
       {
         title: "Отправка заявки",
         copy: "После отправки заявки появится окно с кнопкой открытия админ-панели. Бронь сохраняется только на этом устройстве.",
         target: ["text:Забронировать|Reserve|Book|Резервирай|Отправить|Submit", "button[type='submit']", "form button", "[class*='submit' i]", "[class*='primary' i]"],
+        signal: "submit",
       },
       {
         title: "Проверка в админке",
@@ -368,7 +551,7 @@
     if (currentMode !== "pro") return basicSteps;
 
     return [
-      ...basicSteps.slice(0, 4),
+      ...basicSteps.slice(0, 8),
       {
         title: "Pro CRM",
         copy: "В Pro после прихода гостя можно запустить digital menu и заказ. Если брони нет, обучение подготовит тестовую бронь автоматически.",
@@ -423,6 +606,7 @@
             </div>
             <div class="seatmap-training-body">
               <p class="seatmap-training-copy"></p>
+              <div class="seatmap-training-wait" hidden></div>
               <div class="seatmap-training-note" hidden></div>
               <div class="seatmap-training-modes" hidden>
                 <button class="seatmap-training-mode" type="button" data-training-mode="basic">
@@ -562,6 +746,81 @@
     });
   }
 
+  function hasContactValues() {
+    const inputs = Array.from(document.querySelectorAll("input"));
+    const hasEmail = inputs.some((input) => input.type === "email" && /@/.test(input.value || ""));
+    const hasPhone = inputs.some((input) => input.type === "tel" && String(input.value || "").replace(/\D/g, "").length >= 6);
+    const hasName = inputs.some((input) => {
+      const type = input.type || "text";
+      return type === "text" && String(input.value || "").trim().length >= 2;
+    });
+    return hasEmail && hasPhone && hasName;
+  }
+
+  function hasTableMap() {
+    return Boolean(findTarget(["[data-table-id]", "[aria-label*='table' i]", "[aria-label*='стол' i]", "button[class*='table' i]", "text:6"]));
+  }
+
+  function isStepComplete(step) {
+    if (!step?.signal) return true;
+    if (step.signal === "map") return signalDone("map") || hasTableMap();
+    if (step.signal === "contacts") return signalDone("contacts") || hasContactValues();
+    return signalDone(step.signal);
+  }
+
+  function autoAdvanceIfComplete() {
+    const { steps, index, step } = currentStep();
+    if (!step || !isStepComplete(step) || index >= steps.length - 1) return;
+    window.setTimeout(() => {
+      const current = currentStep();
+      if (current.index === index && isStepComplete(current.step)) nextStep();
+    }, 420);
+  }
+
+  function describeNode(node) {
+    return `${node?.textContent || ""} ${node?.getAttribute?.("aria-label") || ""} ${node?.value || ""}`.toLowerCase();
+  }
+
+  function classifyClick(node) {
+    const clickable = node?.closest?.("button, a, [role='button'], label, [data-table-id], [aria-label]") || node;
+    if (!clickable || clickable.closest(".seatmap-training-layer") || clickable.closest(".seatmap-beta-registration")) return;
+    const text = describeNode(clickable);
+    const active = currentStep().step?.signal;
+
+    if (active === "area" && /зал|зон|сад|терас|terrace|garden|indoor|outside|open|пушачи|основна/.test(text)) markSignal("area", text);
+    if (active === "day" && /(today|tomorrow|днес|утре|сегодня|\d{1,2}[./-]\d{1,2})/.test(text)) markSignal("day", text);
+    if (active === "time" && /(\d{1,2}:\d{2}|час|time)/.test(text)) markSignal("time", text);
+    if (active === "guests" && /(guest|people|гост|душ|човек|\b[1-9]\b)/.test(text)) markSignal("guests", text);
+    if (active === "table" && (/table|стол|маса/.test(text) || /^[\sT]*\d{1,2}[A]?\s*$/i.test(text))) markSignal("table", text);
+    if (active === "submit" && /(заброни|reserve|book|submit|отправ|резервира)/.test(text)) markSignal("submit", text);
+  }
+
+  function classifyInput(node) {
+    if (!node || node.closest?.(".seatmap-beta-registration")) return;
+    const active = currentStep().step?.signal;
+    const value = String(node.value || "").trim();
+    if (!value) return;
+    if (active === "day" && node.type === "date") markSignal("day", value);
+    if (active === "time" && node.type === "time") markSignal("time", value);
+    if (active === "guests" && (node.type === "number" || /guest|people|гост|душ/i.test(node.name || node.getAttribute("aria-label") || ""))) {
+      markSignal("guests", value);
+    }
+    if (active === "contacts" && hasContactValues()) markSignal("contacts");
+  }
+
+  function bindTrainingTracker() {
+    document.addEventListener("click", (event) => classifyClick(event.target), true);
+    document.addEventListener("input", (event) => classifyInput(event.target), true);
+    document.addEventListener("change", (event) => classifyInput(event.target), true);
+    document.addEventListener(
+      "submit",
+      () => {
+        if (currentStep().step?.signal === "submit") markSignal("submit");
+      },
+      true
+    );
+  }
+
   function positionSpotlight() {
     const layer = document.getElementById("seatmapTrainingLayer");
     if (!layer || !layer.classList.contains("is-open")) return;
@@ -621,6 +880,7 @@
     layer.querySelector("[data-training-prev]").disabled = true;
     layer.querySelector("[data-training-action]").hidden = true;
     layer.querySelector("[data-training-next]").textContent = t("next");
+    layer.querySelector("[data-training-next]").disabled = false;
     modes.querySelectorAll("[data-training-mode]").forEach((button) => {
       button.classList.toggle("is-active", button.dataset.trainingMode === mode());
     });
@@ -664,6 +924,7 @@
     layer.querySelector("[data-training-prev]").textContent = t("prev");
     layer.querySelector("[data-training-action]").hidden = true;
     layer.querySelector("[data-training-next]").textContent = t("withTraining");
+    layer.querySelector("[data-training-next]").disabled = false;
     layer.querySelector(".seatmap-training-spotlight").classList.remove("is-visible");
   }
 
@@ -683,6 +944,18 @@
     layer.setAttribute("aria-hidden", "false");
     layer.querySelector(".seatmap-training-title").textContent = step.title;
     layer.querySelector(".seatmap-training-copy").textContent = step.copy;
+    if (step.signal === "map" && hasTableMap() && !signalDone("map")) {
+      const signals = readSignals();
+      signals.map = true;
+      writeSignals(signals);
+    }
+    const complete = isStepComplete(step);
+    const wait = layer.querySelector(".seatmap-training-wait");
+    wait.hidden = !step.signal;
+    wait.textContent = complete ? t("doneAction") : t("waitAction");
+    wait.classList.toggle("is-complete", complete);
+    layer.querySelector(".seatmap-training-card").classList.toggle("is-waiting", Boolean(step.signal && !complete));
+    layer.querySelector(".seatmap-training-card").classList.toggle("is-complete", Boolean(step.signal && complete));
     layer.querySelector(".seatmap-training-note").hidden = true;
     layer.querySelector(".seatmap-training-modes").hidden = true;
     layer.querySelector("[data-training-prev]").disabled = index === 0;
@@ -691,7 +964,9 @@
     action.hidden = !step.actionLabel;
     action.textContent = step.actionLabel || t("actionFallback");
 
-    layer.querySelector("[data-training-next]").textContent = index === steps.length - 1 ? t("finish") : t("next");
+    const nextButton = layer.querySelector("[data-training-next]");
+    nextButton.textContent = index === steps.length - 1 ? t("finish") : t("next");
+    nextButton.disabled = Boolean(step.signal && !complete);
     layer.querySelector(".seatmap-training-status").textContent = `${t("step")} ${index + 1} ${t("of")} ${steps.length}`;
     layer.querySelector(".seatmap-training-progress").innerHTML = steps
       .map((_, itemIndex) => `<span class="seatmap-training-dot ${itemIndex === index ? "is-active" : ""}"></span>`)
@@ -743,9 +1018,11 @@
 
   function init() {
     buildLayer();
+    buildRegistrationGate();
     addLauncher();
     patchEntryModal();
     bindVersionChoice();
+    bindTrainingTracker();
     new MutationObserver(() => {
       patchEntryModal();
       if (window.sessionStorage.getItem(activeKey) === "true") positionSpotlight();
@@ -757,6 +1034,7 @@
     const params = new URLSearchParams(window.location.search);
     const requestedMode = params.get("version") === "basic" ? "basic" : params.get("version") === "pro" ? "pro" : "";
     if (requestedMode) window.sessionStorage.setItem(modeKey, requestedMode);
+    if (showRegistrationGate()) return;
     if (shouldAutoStart()) {
       hideEntryModal();
       window.sessionStorage.setItem(activeKey, "true");
