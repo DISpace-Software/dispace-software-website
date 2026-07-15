@@ -25,6 +25,12 @@
       chooseTitle: "Выберите сценарий обучения.",
       chooseCopy: "Basic показывает короткий путь бронирования. Pro проведёт через полный операционный сценарий с заказом и готовностью блюд.",
       chooseNote: "Данные демо хранятся только в этом браузере и автоматически очищаются через 3 часа.",
+      launchTitle: "Как запустить {mode}?",
+      launchCopy: "Можно сразу открыть демо без подсказок или пройти его с обучением, где будут подсвечены нужные кнопки и функции.",
+      withoutTraining: "Без обучения",
+      withoutTrainingText: "Открыть демо сразу и тестировать самостоятельно.",
+      withTraining: "С обучением",
+      withTrainingText: "Пошаговые подсказки, подсветка кнопок и быстрые демо-действия.",
     },
     en: {
       launcher: "Training",
@@ -44,6 +50,12 @@
       chooseTitle: "Choose a training scenario.",
       chooseCopy: "Basic shows the booking flow. Pro walks through the full operational order scenario.",
       chooseNote: "Demo data stays only in this browser and is cleared automatically after 3 hours.",
+      launchTitle: "How do you want to open {mode}?",
+      launchCopy: "Open the demo directly or use guided training with highlighted buttons and actions.",
+      withoutTraining: "Without training",
+      withoutTrainingText: "Open the demo and test it yourself.",
+      withTraining: "With training",
+      withTrainingText: "Step-by-step guidance, highlighted controls and quick demo actions.",
     },
     bg: {
       launcher: "Обучение",
@@ -63,6 +75,12 @@
       chooseTitle: "Изберете сценарий за обучение.",
       chooseCopy: "Basic показва резервацията. Pro води през пълния оперативен сценарий с поръчка.",
       chooseNote: "Демо данните остават само в този браузър и се изчистват автоматично след 3 часа.",
+      launchTitle: "Как да отворим {mode}?",
+      launchCopy: "Може да отворите демото директно или с обучение, което подсветява нужните бутони и функции.",
+      withoutTraining: "Без обучение",
+      withoutTrainingText: "Отворете демото и тествайте самостоятелно.",
+      withTraining: "С обучение",
+      withTrainingText: "Стъпки, подсветени контроли и бързи демо действия.",
     },
   };
 
@@ -73,6 +91,10 @@
 
   function t(key) {
     return copy[lang()][key] || copy.ru[key] || key;
+  }
+
+  function interpolate(template, values) {
+    return String(template || "").replace(/\{(\w+)\}/g, (_, key) => values[key] || "");
   }
 
   function route(path) {
@@ -108,6 +130,13 @@
     if (!modal) return;
     modal.classList.remove("is-open");
     document.body.classList.remove("seatmap-version-lock");
+  }
+
+  function targetPath(nextMode, training = false) {
+    const params = new URLSearchParams();
+    params.set("version", nextMode);
+    if (training) params.set("tour", "1");
+    return `/seatmap-app/reservation?${params.toString()}`;
   }
 
   function readState() {
@@ -268,9 +297,15 @@
     window.sessionStorage.setItem(activeKey, "true");
     window.sessionStorage.setItem(modeKey, nextMode);
     window.sessionStorage.setItem(stepKey, "0");
-    const target = nextMode === "pro" ? "/seatmap-app/reservation?version=pro&tour=1" : "/seatmap-app/reservation?version=basic&tour=1";
-    if (!isReservation()) window.location.href = route(target);
+    if (!isReservation()) window.location.href = route(targetPath(nextMode, true));
     else render();
+  }
+
+  function startWithoutTraining(nextMode) {
+    setVersion(nextMode);
+    hideEntryModal();
+    stop();
+    window.location.href = route(targetPath(nextMode, false));
   }
 
   function stop() {
@@ -287,27 +322,27 @@
     const basicSteps = [
       {
         title: "Карта бронирования",
-        copy: "Здесь гость выбирает дату, время, количество гостей и свободный стол. Карта остаётся интерактивной, а обучение только подсвечивает нужную область.",
-        target: ["form", "[class*='reservation' i]", "main"],
+        copy: "Начинаем с формы: дата, время, контакты и количество гостей. Кнопка ниже может заполнить демо-данные, а подсветка показывает рабочую область заявки.",
+        target: ["input[type='date']", "input[type='time']", "input[type='tel']", "input[type='email']", "form"],
         actionLabel: "Заполнить демо-данные",
         action: fillReservationForm,
       },
       {
         title: "Выбор стола",
         copy: "Нажмите на свободный стол на карте. Для красивого теста можно выбрать стол 6 в основном зале.",
-        target: ["[data-table-id]", "[aria-label*='table' i]", "[aria-label*='стол' i]", "button[class*='table' i]"],
+        target: ["text:6", "[data-table-id='6']", "[aria-label*='6']", "[data-table-id]", "[aria-label*='table' i]", "[aria-label*='стол' i]", "button[class*='table' i]"],
         actionLabel: "Подготовить демо-бронь",
         action: () => ensureDemoReservation(false),
       },
       {
         title: "Отправка заявки",
         copy: "После отправки заявки появится окно с кнопкой открытия админ-панели. Бронь сохраняется только на этом устройстве.",
-        target: ["button[type='submit']", "form button", "[class*='submit' i]", "[class*='primary' i]"],
+        target: ["text:Забронировать|Reserve|Book|Резервирай|Отправить|Submit", "button[type='submit']", "form button", "[class*='submit' i]", "[class*='primary' i]"],
       },
       {
         title: "Проверка в админке",
         copy: "В админ-панели команда видит новую резервацию и может подтвердить приход гостя. Я могу открыть её сразу с демо-бронью.",
-        target: ["#seatmapReservationAdminModal", "#seatmapOpenAdminPanel"],
+        target: ["#seatmapOpenAdminPanel", "text:Открыть админ|Open admin|Отвори админ", "#seatmapReservationAdminModal"],
         actionLabel: "Открыть админку",
         action: () => {
           setVersion(currentMode);
@@ -319,7 +354,7 @@
       {
         title: "Резервации и карта",
         copy: "Здесь видно список броней, статус гостя и рабочую карту столов. В Basic сценарий на этом заканчивается.",
-        target: ["[class*='reservation' i]", "main", "#root"],
+        target: ["text:Прибыл|Arrived|Пристиг", "[class*='reservation' i]", "main", "#root"],
       },
     ];
 
@@ -330,35 +365,35 @@
       {
         title: "Pro CRM",
         copy: "В Pro после прихода гостя можно запустить digital menu и заказ. Если брони нет, обучение подготовит тестовую бронь автоматически.",
-        target: ["#seatmapProLauncher", "[class*='reservation' i]", "main"],
+        target: ["#seatmapProLauncher", "text:Открыть Pro order flow|Digital menu|Прибыл|Arrived|Пристиг", "[class*='reservation' i]", "main"],
         actionLabel: "Открыть Pro-flow",
         action: openProFlow,
       },
       {
         title: "Письмо гостю",
         copy: "Это имитация письма/сообщения для гостя. Кнопка открывает digital menu, где клиент выбирает блюда и напитки.",
-        target: ["#seatmapProEmail", "[data-pro-open-menu]"],
+        target: ["[data-pro-open-menu]", "text:Открыть digital menu|Open digital menu", "#seatmapProEmail"],
         actionLabel: "Открыть digital menu",
         action: () => clickFirst(["[data-pro-open-menu]", "#seatmapProLauncher"]) || openProFlow(),
       },
       {
         title: "Digital menu",
         copy: "Выберите несколько позиций. Цена уже в евро, а заказ попадёт в кухню, бар и на карту официанта.",
-        target: ["#seatmapProMenu", ".seatmap-pro-menu-item", "[data-pro-menu-grid]"],
+        target: ["text:Отправить заказ|Submit order", ".seatmap-pro-menu-item", "#seatmapProMenu", "[data-pro-menu-grid]"],
         actionLabel: "Создать демо-заказ",
         action: openProDashboardWithOrder,
       },
       {
         title: "Кухня и бар",
         copy: "Слева кухня и бар принимают позиции по отделам. Нажмите «Отметить готово», чтобы блюдо подсветилось у официанта.",
-        target: ["#seatmapProShell", "[data-pro-kitchen]", "[data-pro-ready]"],
+        target: ["[data-pro-ready]", "text:Отметить готово|Mark ready", "[data-pro-kitchen]", "#seatmapProShell"],
         actionLabel: "Показать заказ",
         action: openProDashboardWithOrder,
       },
       {
         title: "Карта официанта",
         copy: "Справа используется та же логика столов, что и в резервациях. Когда кухня отмечает готовность, стол подсвечивается зелёным.",
-        target: ["[data-pro-table-map]", ".seatmap-pro-table.has-ready", ".seatmap-pro-table.has-order"],
+        target: [".seatmap-pro-table.has-ready", ".seatmap-pro-table.has-order", "[data-pro-table-map]"],
       },
     ];
   }
@@ -407,14 +442,25 @@
 
     const layer = document.getElementById("seatmapTrainingLayer");
     layer.querySelector(".seatmap-training-close").addEventListener("click", stop);
-    layer.querySelector("[data-training-prev]").addEventListener("click", previousStep);
+    layer.querySelector("[data-training-prev]").addEventListener("click", () => {
+      if (layer.dataset.trainingView === "launch") {
+        layer.classList.remove("is-open");
+        layer.setAttribute("aria-hidden", "true");
+        return;
+      }
+      previousStep();
+    });
     layer.querySelector("[data-training-next]").addEventListener("click", () => {
-      if (layer.dataset.trainingView === "chooser") start(mode());
+      if (layer.dataset.trainingView === "chooser" || layer.dataset.trainingView === "launch") start(mode());
       else nextStep();
     });
     layer.querySelector("[data-training-action]").addEventListener("click", runStepAction);
     layer.querySelectorAll("[data-training-mode]").forEach((button) => {
-      button.addEventListener("click", () => start(button.dataset.trainingMode));
+      button.addEventListener("click", () => {
+        if (button.dataset.trainingChoice === "with") start(button.dataset.trainingMode);
+        else if (button.dataset.trainingChoice === "without") startWithoutTraining(button.dataset.trainingMode);
+        else start(button.dataset.trainingMode);
+      });
     });
   }
 
@@ -430,14 +476,22 @@
   }
 
   function patchEntryModal() {
-    const head = document.querySelector(".seatmap-entry-head");
-    if (!head || document.querySelector(".seatmap-training-entry-action")) return;
-    const button = document.createElement("button");
-    button.className = "seatmap-entry-guide seatmap-training-entry-action";
-    button.type = "button";
-    button.textContent = t("launcher");
-    button.addEventListener("click", showChooser);
-    head.appendChild(button);
+    document.querySelectorAll(".seatmap-training-entry-action").forEach((node) => node.remove());
+  }
+
+  function bindVersionChoice() {
+    document.addEventListener(
+      "click",
+      (event) => {
+        const button = event.target?.closest?.("[data-seatmap-version]");
+        if (!button || !document.getElementById("seatmapEntryModal")?.contains(button)) return;
+        const nextMode = button.dataset.seatmapVersion === "pro" ? "pro" : "basic";
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        showLaunchChoice(nextMode);
+      },
+      true
+    );
   }
 
   function currentStepIndex() {
@@ -456,6 +510,11 @@
   function findTarget(selectors) {
     const list = Array.isArray(selectors) ? selectors : [selectors];
     for (const selector of list.filter(Boolean)) {
+      if (String(selector).startsWith("text:")) {
+        const visibleByText = findTextTarget(String(selector).slice(5));
+        if (visibleByText) return visibleByText;
+        continue;
+      }
       let nodes = [];
       try {
         nodes = Array.from(document.querySelectorAll(selector));
@@ -470,6 +529,29 @@
       if (visible) return visible;
     }
     return null;
+  }
+
+  function isVisible(node) {
+    if (!node) return false;
+    const rect = node.getBoundingClientRect();
+    const style = window.getComputedStyle(node);
+    return rect.width > 4 && rect.height > 4 && style.visibility !== "hidden" && style.display !== "none";
+  }
+
+  function findTextTarget(pattern) {
+    const parts = String(pattern || "")
+      .split("|")
+      .map((item) => item.trim().toLowerCase())
+      .filter(Boolean);
+    if (!parts.length) return null;
+    const candidates = Array.from(
+      document.querySelectorAll("button, a, input[type='button'], input[type='submit'], [role='button'], [aria-label]")
+    );
+    return candidates.find((node) => {
+      if (!isVisible(node)) return false;
+      const text = `${node.textContent || ""} ${node.getAttribute("aria-label") || ""} ${node.value || ""}`.trim().toLowerCase();
+      return parts.some((part) => text.includes(part));
+    });
   }
 
   function positionSpotlight() {
@@ -511,15 +593,67 @@
     const note = layer.querySelector(".seatmap-training-note");
     note.hidden = false;
     note.textContent = t("chooseNote");
-    layer.querySelector(".seatmap-training-modes").hidden = false;
+    const modes = layer.querySelector(".seatmap-training-modes");
+    modes.hidden = false;
+    modes.innerHTML = `
+      <button class="seatmap-training-mode" type="button" data-training-mode="basic">
+        <strong>${t("basicTitle")}</strong>
+        <span>${t("basicText")}</span>
+      </button>
+      <button class="seatmap-training-mode" type="button" data-training-mode="pro">
+        <strong>${t("proTitle")}</strong>
+        <span>${t("proText")}</span>
+      </button>
+    `;
+    modes.querySelectorAll("[data-training-mode]").forEach((button) => {
+      button.addEventListener("click", () => start(button.dataset.trainingMode));
+    });
     layer.querySelector(".seatmap-training-progress").innerHTML = "";
     layer.querySelector(".seatmap-training-status").textContent = "";
     layer.querySelector("[data-training-prev]").disabled = true;
     layer.querySelector("[data-training-action]").hidden = true;
     layer.querySelector("[data-training-next]").textContent = t("next");
-    layer.querySelectorAll("[data-training-mode]").forEach((button) => {
+    modes.querySelectorAll("[data-training-mode]").forEach((button) => {
       button.classList.toggle("is-active", button.dataset.trainingMode === mode());
     });
+    layer.querySelector(".seatmap-training-spotlight").classList.remove("is-visible");
+  }
+
+  function showLaunchChoice(nextMode) {
+    buildLayer();
+    window.sessionStorage.setItem(modeKey, nextMode);
+    const layer = document.getElementById("seatmapTrainingLayer");
+    layer.dataset.trainingView = "launch";
+    layer.classList.add("is-open");
+    layer.setAttribute("aria-hidden", "false");
+    layer.querySelector(".seatmap-training-title").textContent = interpolate(t("launchTitle"), { mode: nextMode === "pro" ? "Pro" : "Basic" });
+    layer.querySelector(".seatmap-training-copy").textContent = t("launchCopy");
+    const note = layer.querySelector(".seatmap-training-note");
+    note.hidden = false;
+    note.textContent = t("chooseNote");
+    const modes = layer.querySelector(".seatmap-training-modes");
+    modes.hidden = false;
+    modes.innerHTML = `
+      <button class="seatmap-training-mode" type="button" data-training-mode="${nextMode}" data-training-choice="without">
+        <strong>${t("withoutTraining")}</strong>
+        <span>${t("withoutTrainingText")}</span>
+      </button>
+      <button class="seatmap-training-mode is-primary" type="button" data-training-mode="${nextMode}" data-training-choice="with">
+        <strong>${t("withTraining")}</strong>
+        <span>${t("withTrainingText")}</span>
+      </button>
+    `;
+    modes.querySelectorAll("[data-training-choice]").forEach((button) => {
+      button.addEventListener("click", () => {
+        if (button.dataset.trainingChoice === "with") start(button.dataset.trainingMode);
+        else startWithoutTraining(button.dataset.trainingMode);
+      });
+    });
+    layer.querySelector(".seatmap-training-progress").innerHTML = "";
+    layer.querySelector(".seatmap-training-status").textContent = nextMode === "pro" ? "Pro" : "Basic";
+    layer.querySelector("[data-training-prev]").disabled = false;
+    layer.querySelector("[data-training-action]").hidden = true;
+    layer.querySelector("[data-training-next]").textContent = t("withTraining");
     layer.querySelector(".seatmap-training-spotlight").classList.remove("is-visible");
   }
 
@@ -601,6 +735,7 @@
     buildLayer();
     addLauncher();
     patchEntryModal();
+    bindVersionChoice();
     new MutationObserver(() => {
       patchEntryModal();
       if (window.sessionStorage.getItem(activeKey) === "true") positionSpotlight();
